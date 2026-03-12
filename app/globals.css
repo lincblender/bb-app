@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bb-powder-blue: #86b3d5;
+  --bb-powder-blue-light: #b8d4e8;
+  --bb-coral: #fd747b;
+  --bb-coral-light: #fecaca;
+  --bb-mustard: #fdae4f;
+  --bb-mustard-light: #fde4c4;
+  --bb-black: #1a1a1a;
+  --bb-white: #ffffff;
+  --bb-dark: #0f1419;
+  --bb-dark-elevated: #1a2229;
+  --bb-dark-sidebar: #141b22;
+  --bb-orange: #f97316;
+  --bb-orange-light: #fed7aa;
+  --bb-red: #dc2626;
+  --bb-red-light: #fecaca;
+  --bb-green: #16a34a;
+  --bb-green-light: #bbf7d0;
+  --bb-blue: #2563eb;
+  --bb-blue-light: #bfdbfe;
+  --bb-grey: #2d3748;
+  --bb-grey-sidebar: #1e293b;
+}
+
+/* ==========================================================================
+   Semantic theme – use these instead of raw Tailwind colors
+   ========================================================================== */
+
+@layer components {
+  /* Text */
+  .bb-text-primary {
+    @apply text-gray-100;
+  }
+  .bb-text-secondary {
+    @apply text-gray-300;
+  }
+  .bb-text-muted {
+    color: rgb(156 163 175 / 1);
+  }
+  .bb-text-muted-alt {
+    color: rgb(209 213 219 / 1);
+  }
+  .bb-text-link {
+    @apply text-bb-powder-blue hover:underline;
+  }
+  .bb-text-error {
+    @apply text-bb-red;
+  }
+  .bb-text-accent {
+    @apply text-bb-mustard;
+  }
+
+  /* Page structure */
+  .bb-page-title {
+    @apply text-2xl font-bold text-gray-100;
+  }
+  .bb-page-subtitle {
+    @apply mt-1 text-gray-400;
+  }
+  .bb-section-title {
+    @apply font-semibold text-gray-100;
+  }
+
+  /* Backgrounds */
+  .bb-bg-base {
+    @apply bg-bb-dark;
+  }
+  .bb-bg-surface {
+    @apply bg-bb-dark-elevated;
+  }
+  .bb-bg-sidebar {
+    @apply bg-bb-dark-sidebar;
+  }
+
+  /* Borders */
+  .bb-border-default {
+    @apply border-gray-600;
+  }
+  .bb-border-subtle {
+    @apply border-gray-700/50;
+  }
+  .bb-border-r-subtle {
+    @apply border-r border-gray-700/50;
+  }
+
+  /* Interactive */
+  .bb-nav-link {
+    @apply text-sm font-medium text-gray-400 hover:text-gray-100;
+  }
+  .bb-nav-link-active {
+    @apply bg-bb-powder-blue/20 text-bb-powder-blue;
+  }
+  .bb-interactive-hover {
+    @apply text-gray-400 hover:bg-gray-700/50 hover:text-gray-100;
+  }
+  .bb-interactive-hover-subtle {
+    @apply hover:bg-gray-600;
+  }
+  .bb-card-hover {
+    @apply transition-shadow hover:border-gray-500;
+  }
+  .bb-input-focus {
+    @apply focus:border-bb-coral focus:outline-none focus:ring-1 focus:ring-bb-coral;
+  }
+
+  /* Form controls */
+  .bb-input {
+    @apply rounded-lg border border-gray-600 bg-bb-dark px-3 py-2 text-gray-100 placeholder-gray-500;
+  }
+  .bb-input:focus {
+    @apply border-bb-coral outline-none ring-1 ring-bb-coral;
+  }
+  .bb-select {
+    @apply rounded-lg border border-gray-600 bg-bb-dark px-3 py-2 text-sm text-gray-100;
+  }
+  .bb-checkbox {
+    @apply mt-1 h-4 w-4 rounded border-gray-600 bg-bb-dark text-bb-coral focus:ring-bb-coral;
+  }
+
+  /* Cards & lists */
+  .bb-card {
+    @apply rounded-lg border border-gray-700/50 bg-bb-dark-elevated p-6 shadow-card;
+  }
+  .bb-card-interactive {
+    @apply rounded-lg border border-gray-600 bg-bb-dark-elevated p-4 shadow-card transition-shadow hover:border-gray-500;
+  }
+  .bb-list-item {
+    @apply flex cursor-pointer items-start gap-3 rounded-lg border border-gray-600 p-4 hover:bg-gray-700/50;
+  }
+  .bb-empty-state {
+    @apply rounded-lg border border-gray-600 bg-bb-dark-elevated p-12 text-center;
+  }
+
+  /* Collapsible / panel */
+  .bb-panel-header {
+    @apply flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-100 hover:bg-gray-700/50;
+  }
+  .bb-panel-border {
+    @apply border-b border-gray-700/50;
+  }
+
+  /* Suggested prompt chips */
+  .bb-prompt-chip {
+    @apply rounded-full border border-gray-600 bg-bb-dark-elevated px-4 py-2 text-sm text-gray-300 shadow-sm transition-colors hover:border-bb-coral hover:bg-bb-coral/20;
+  }
+
+  /* CTA primary */
+  .bb-btn-primary {
+    @apply rounded-full bg-bb-coral px-6 py-2.5 font-medium text-white shadow-sm transition-colors hover:bg-bb-coral/90;
+  }
+
+  /* Loading indicator */
+  .bb-loading-dot {
+    @apply h-2 w-2 animate-bounce rounded-full bg-gray-400;
+  }
+  .bb-loading-dot-1 { animation-delay: 0ms; }
+  .bb-loading-dot-2 { animation-delay: 150ms; }
+  .bb-loading-dot-3 { animation-delay: 300ms; }
+}
+
+body {
+  @apply min-h-screen bg-bb-dark text-gray-100 antialiased font-sans;
+}
+
+/* Native dialog backdrop */
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}

@@ -1,0 +1,2572 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bidblender.app/schemas/ai-response.schema.json",
+  "title": "BidBlender AI Analysis Response",
+  "description": "Canonical machine-parseable response contract for BidBlender AI analysis jobs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "job_id",
+    "tenant_id",
+    "analysis_type",
+    "paradigm",
+    "status",
+    "model",
+    "summary",
+    "results",
+    "evidence",
+    "missing_data",
+    "confidence",
+    "db_records",
+    "usage",
+    "timestamps"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "job_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "tenant_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "opportunity_id": {
+      "$ref": "#/$defs/nullableUuid"
+    },
+    "analysis_type": {
+      "$ref": "#/$defs/analysisType"
+    },
+    "paradigm": {
+      "$ref": "#/$defs/paradigm"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "partial",
+        "failed"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "model_id",
+        "model_profile",
+        "temperature"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "openai"
+          ]
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_profile": {
+          "$ref": "#/$defs/modelProfile"
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "reasoning_effort": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            null
+          ]
+        }
+      }
+    },
+    "results": {
+      "type": "object"
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "technical_fit": {
+          "$ref": "#/$defs/score100"
+        },
+        "network_strength": {
+          "$ref": "#/$defs/score100"
+        },
+        "opportunity_complexity": {
+          "$ref": "#/$defs/score100"
+        },
+        "win_probability": {
+          "$ref": "#/$defs/score100"
+        },
+        "pursuit_capacity": {
+          "$ref": "#/$defs/score100"
+        },
+        "buyer_access": {
+          "$ref": "#/$defs/score100"
+        },
+        "delivery_fit": {
+          "$ref": "#/$defs/score100"
+        },
+        "strategic_desire": {
+          "$ref": "#/$defs/score100"
+        },
+        "evidence_confidence": {
+          "$ref": "#/$defs/score100"
+        },
+        "overall_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/recommendation"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidenceItem"
+      }
+    },
+    "missing_data": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidence": {
+      "$ref": "#/$defs/confidence"
+    },
+    "db_records": {
+      "type": "array",
+      "description": "Optional direct-ingestion rows grouped by target table.",
+      "items": {
+        "$ref": "#/$defs/dbRecord"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "total_tokens",
+        "estimated_cost_usd"
+      ],
+      "properties": {
+        "input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimated_cost_usd": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "timestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "started_at",
+        "completed_at",
+        "latency_ms"
+      ],
+      "properties": {
+        "started_at": {
+          "$ref": "#/$defs/isoDateTime"
+        },
+        "completed_at": {
+          "$ref": "#/$defs/isoDateTime"
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "paradigm": {
+            "const": "LOW_COST_EXTRACTION"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "$ref": "#/$defs/lowCostExtractionResults"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paradigm": {
+            "const": "OPPORTUNITY_INTELLIGENCE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "$ref": "#/$defs/opportunityIntelligenceResults"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paradigm": {
+            "const": "COMPANY_FIT"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "$ref": "#/$defs/companyFitResults"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paradigm": {
+            "const": "NETWORK_INFLUENCE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "$ref": "#/$defs/networkInfluenceResults"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paradigm": {
+            "const": "COMPETITIVE_LANDSCAPE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "$ref": "#/$defs/competitiveLandscapeResults"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paradigm": {
+            "const": "STRATEGIC_BID_INTELLIGENCE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "$ref": "#/$defs/strategicBidIntelligenceResults"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paradigm": {
+            "const": "CROSS_OPPORTUNITY_INTELLIGENCE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "$ref": "#/$defs/crossOpportunityResults"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paradigm": {
+            "const": "ADDENDA_CHANGE_ANALYSIS"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "$ref": "#/$defs/addendaChangeResults"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paradigm": {
+            "const": "KNOWLEDGE_BASE_INTELLIGENCE"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "results": {
+            "$ref": "#/$defs/knowledgeBaseResults"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis_type": {
+            "enum": [
+              "EXTRACT_METADATA",
+              "EXTRACT_PROCUREMENT_STRUCTURE",
+              "EXTRACT_SCOPE",
+              "EXTRACT_EVALUATION_CRITERIA",
+              "EXTRACT_ELIGIBILITY_REQUIREMENTS",
+              "EXTRACT_RISK_CLAUSES",
+              "EXTRACT_TIMELINE",
+              "EXTRACT_DOCUMENT_INVENTORY",
+              "EXTRACT_RESPONSE_STRUCTURE"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paradigm": {
+            "const": "LOW_COST_EXTRACTION"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis_type": {
+            "enum": [
+              "ANALYSE_COMPLEXITY",
+              "ESTIMATE_OPPORTUNITY_SIZE",
+              "ANALYSE_PROCUREMENT_BEHAVIOUR",
+              "ANALYSE_EVALUATION_STRATEGY",
+              "ANALYSE_CONTRACT_RISK",
+              "CLASSIFY_OPPORTUNITY_TYPE"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paradigm": {
+            "const": "OPPORTUNITY_INTELLIGENCE"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis_type": {
+            "enum": [
+              "SCORE_TECHNICAL_FIT",
+              "ANALYSE_CAPABILITY_GAPS",
+              "ANALYSE_STAFFING_FEASIBILITY",
+              "ANALYSE_SECTOR_EXPERIENCE",
+              "ANALYSE_TECH_STACK_ALIGNMENT",
+              "ANALYSE_COMPLIANCE_READINESS"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paradigm": {
+            "const": "COMPANY_FIT"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis_type": {
+            "enum": [
+              "ANALYSE_RELATIONSHIP_DENSITY",
+              "ANALYSE_DECISION_MAKER_PROXIMITY",
+              "ANALYSE_RELATIONSHIP_COVERAGE",
+              "ANALYSE_COMPETITOR_NETWORK_INFLUENCE",
+              "RECOMMEND_RELATIONSHIP_STRATEGY"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paradigm": {
+            "const": "NETWORK_INFLUENCE"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis_type": {
+            "enum": [
+              "IDENTIFY_LIKELY_COMPETITORS",
+              "DETECT_INCUMBENT",
+              "ASSESS_COMPETITIVE_ADVANTAGE",
+              "RECOMMEND_PARTNERS",
+              "ESTIMATE_WIN_PROBABILITY"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paradigm": {
+            "const": "COMPETITIVE_LANDSCAPE"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis_type": {
+            "enum": [
+              "RECOMMEND_BID_DECISION",
+              "GENERATE_BID_STRATEGY",
+              "GENERATE_NARRATIVE_POSITIONING",
+              "GENERATE_DIFFERENTIATION_STRATEGY",
+              "ANALYSE_PRICING_STRATEGY",
+              "GENERATE_STAKEHOLDER_ENGAGEMENT_PLAN"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paradigm": {
+            "const": "STRATEGIC_BID_INTELLIGENCE"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis_type": {
+            "enum": [
+              "COMPARE_OPPORTUNITIES",
+              "OPTIMISE_PORTFOLIO",
+              "FORECAST_PIPELINE"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paradigm": {
+            "const": "CROSS_OPPORTUNITY_INTELLIGENCE"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis_type": {
+            "enum": [
+              "DETECT_DOCUMENT_CHANGES",
+              "ASSESS_CHANGE_IMPACT"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paradigm": {
+            "const": "ADDENDA_CHANGE_ANALYSIS"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "analysis_type": {
+            "enum": [
+              "IDENTIFY_REUSABLE_CONTENT",
+              "MATCH_CASE_STUDIES",
+              "DETECT_KNOWLEDGE_GAPS"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "paradigm": {
+            "const": "KNOWLEDGE_BASE_INTELLIGENCE"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "nullableUuid": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "isoDateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "score100": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overall",
+        "band",
+        "notes"
+      ],
+      "properties": {
+        "overall": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "band": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "money": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency",
+        "amount"
+      ],
+      "properties": {
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "min_amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "max_amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "analysisType": {
+      "type": "string",
+      "enum": [
+        "EXTRACT_METADATA",
+        "EXTRACT_PROCUREMENT_STRUCTURE",
+        "EXTRACT_SCOPE",
+        "EXTRACT_EVALUATION_CRITERIA",
+        "EXTRACT_ELIGIBILITY_REQUIREMENTS",
+        "EXTRACT_RISK_CLAUSES",
+        "EXTRACT_TIMELINE",
+        "EXTRACT_DOCUMENT_INVENTORY",
+        "EXTRACT_RESPONSE_STRUCTURE",
+        "ANALYSE_COMPLEXITY",
+        "ESTIMATE_OPPORTUNITY_SIZE",
+        "ANALYSE_PROCUREMENT_BEHAVIOUR",
+        "ANALYSE_EVALUATION_STRATEGY",
+        "ANALYSE_CONTRACT_RISK",
+        "CLASSIFY_OPPORTUNITY_TYPE",
+        "SCORE_TECHNICAL_FIT",
+        "ANALYSE_CAPABILITY_GAPS",
+        "ANALYSE_STAFFING_FEASIBILITY",
+        "ANALYSE_SECTOR_EXPERIENCE",
+        "ANALYSE_TECH_STACK_ALIGNMENT",
+        "ANALYSE_COMPLIANCE_READINESS",
+        "ANALYSE_RELATIONSHIP_DENSITY",
+        "ANALYSE_DECISION_MAKER_PROXIMITY",
+        "ANALYSE_RELATIONSHIP_COVERAGE",
+        "ANALYSE_COMPETITOR_NETWORK_INFLUENCE",
+        "RECOMMEND_RELATIONSHIP_STRATEGY",
+        "IDENTIFY_LIKELY_COMPETITORS",
+        "DETECT_INCUMBENT",
+        "ASSESS_COMPETITIVE_ADVANTAGE",
+        "RECOMMEND_PARTNERS",
+        "ESTIMATE_WIN_PROBABILITY",
+        "RECOMMEND_BID_DECISION",
+        "GENERATE_BID_STRATEGY",
+        "GENERATE_NARRATIVE_POSITIONING",
+        "GENERATE_DIFFERENTIATION_STRATEGY",
+        "ANALYSE_PRICING_STRATEGY",
+        "GENERATE_STAKEHOLDER_ENGAGEMENT_PLAN",
+        "COMPARE_OPPORTUNITIES",
+        "OPTIMISE_PORTFOLIO",
+        "FORECAST_PIPELINE",
+        "DETECT_DOCUMENT_CHANGES",
+        "ASSESS_CHANGE_IMPACT",
+        "IDENTIFY_REUSABLE_CONTENT",
+        "MATCH_CASE_STUDIES",
+        "DETECT_KNOWLEDGE_GAPS"
+      ]
+    },
+    "paradigm": {
+      "type": "string",
+      "enum": [
+        "LOW_COST_EXTRACTION",
+        "OPPORTUNITY_INTELLIGENCE",
+        "COMPANY_FIT",
+        "NETWORK_INFLUENCE",
+        "COMPETITIVE_LANDSCAPE",
+        "STRATEGIC_BID_INTELLIGENCE",
+        "CROSS_OPPORTUNITY_INTELLIGENCE",
+        "ADDENDA_CHANGE_ANALYSIS",
+        "KNOWLEDGE_BASE_INTELLIGENCE"
+      ]
+    },
+    "modelProfile": {
+      "type": "string",
+      "enum": [
+        "economy",
+        "balanced",
+        "deep"
+      ]
+    },
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_doc_id",
+        "excerpt",
+        "relevance"
+      ],
+      "properties": {
+        "source_doc_id": {
+          "type": "string"
+        },
+        "source_doc_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "section": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "excerpt": {
+          "type": "string"
+        },
+        "relevance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "priority",
+        "action"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "action": {
+          "type": "string"
+        },
+        "owner": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "due_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "decisionDimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "score",
+        "status",
+        "summary"
+      ],
+      "properties": {
+        "score": {
+          "$ref": "#/$defs/score100"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "strong",
+            "mixed",
+            "weak",
+            "unknown"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "positives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "researchAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "reason",
+        "priority"
+      ],
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "expected_signal": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        }
+      }
+    },
+    "dbRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "table",
+        "operation",
+        "conflict_keys",
+        "rows"
+      ],
+      "properties": {
+        "table": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string",
+          "enum": [
+            "insert",
+            "upsert",
+            "update",
+            "delete"
+          ]
+        },
+        "conflict_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "lowCostExtractionResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metadata",
+        "procurement_structure",
+        "scope_items",
+        "evaluation_criteria",
+        "eligibility_requirements",
+        "risk_clauses",
+        "timeline",
+        "document_inventory",
+        "response_structure"
+      ],
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "issuing_organisation",
+            "opportunity_title",
+            "reference_number",
+            "procurement_portal",
+            "category",
+            "jurisdiction",
+            "estimated_value",
+            "closing_datetime_utc",
+            "briefing_datetimes_utc",
+            "contract_duration_months"
+          ],
+          "properties": {
+            "issuing_organisation": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "opportunity_title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "reference_number": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "procurement_portal": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "category": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "jurisdiction": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "estimated_value": {
+              "$ref": "#/$defs/money"
+            },
+            "closing_datetime_utc": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "briefing_datetimes_utc": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/isoDateTime"
+              }
+            },
+            "contract_duration_months": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "procurement_structure": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "procurement_method",
+            "stage_count",
+            "is_panel_arrangement",
+            "has_shortlist_stage"
+          ],
+          "properties": {
+            "procurement_method": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "RFT",
+                "RFQ",
+                "RFI",
+                "EOI",
+                "other",
+                null
+              ]
+            },
+            "stage_count": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            },
+            "is_panel_arrangement": {
+              "type": "boolean"
+            },
+            "has_shortlist_stage": {
+              "type": "boolean"
+            }
+          }
+        },
+        "scope_items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "description",
+              "mandatory"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "mandatory": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "evaluation_criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "criterion",
+              "weight_percent",
+              "is_mandatory"
+            ],
+            "properties": {
+              "criterion": {
+                "type": "string"
+              },
+              "weight_percent": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100
+              },
+              "is_mandatory": {
+                "type": "boolean"
+              },
+              "scoring_method": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "eligibility_requirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "requirement_type",
+              "description",
+              "mandatory"
+            ],
+            "properties": {
+              "requirement_type": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "mandatory": {
+                "type": "boolean"
+              },
+              "evidence_required": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "risk_clauses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clause_type",
+              "severity",
+              "description"
+            ],
+            "properties": {
+              "clause_type": {
+                "type": "string"
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "timeline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "datetime_utc",
+              "is_hard_deadline"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "datetime_utc": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "is_hard_deadline": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "document_inventory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "doc_id",
+              "file_name",
+              "doc_type"
+            ],
+            "properties": {
+              "doc_id": {
+                "type": "string"
+              },
+              "file_name": {
+                "type": "string"
+              },
+              "doc_type": {
+                "type": "string"
+              },
+              "page_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              }
+            }
+          }
+        },
+        "response_structure": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "section_name",
+              "is_mandatory"
+            ],
+            "properties": {
+              "section_name": {
+                "type": "string"
+              },
+              "is_mandatory": {
+                "type": "boolean"
+              },
+              "page_limit": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              },
+              "template_required": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "opportunityIntelligenceResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "complexity_assessment",
+        "size_estimation",
+        "procurement_behaviour",
+        "evaluation_strategy",
+        "contract_risk_profile",
+        "opportunity_classification",
+        "red_flags",
+        "quick_wins"
+      ],
+      "properties": {
+        "complexity_assessment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "score",
+            "band",
+            "drivers"
+          ],
+          "properties": {
+            "score": {
+              "$ref": "#/$defs/score100"
+            },
+            "band": {
+              "type": "string",
+              "enum": [
+                "Low",
+                "Medium",
+                "High",
+                "Extreme"
+              ]
+            },
+            "drivers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "size_estimation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "estimated_team_fte_min",
+            "estimated_team_fte_max",
+            "estimated_contract_value",
+            "assumptions"
+          ],
+          "properties": {
+            "estimated_team_fte_min": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "estimated_team_fte_max": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "estimated_contract_value": {
+              "$ref": "#/$defs/money"
+            },
+            "assumptions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "procurement_behaviour": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "risk_tolerance",
+            "incumbent_bias",
+            "innovation_openness",
+            "bureaucratic_rigidity"
+          ],
+          "properties": {
+            "risk_tolerance": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            },
+            "incumbent_bias": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            },
+            "innovation_openness": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            },
+            "bureaucratic_rigidity": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            }
+          }
+        },
+        "evaluation_strategy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "criteria_signals",
+            "dominant_decision_factor"
+          ],
+          "properties": {
+            "criteria_signals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "criterion",
+                  "weight_percent"
+                ],
+                "properties": {
+                  "criterion": {
+                    "type": "string"
+                  },
+                  "weight_percent": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                }
+              }
+            },
+            "dominant_decision_factor": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "contract_risk_profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "risk_score",
+            "risk_areas"
+          ],
+          "properties": {
+            "risk_score": {
+              "$ref": "#/$defs/score100"
+            },
+            "risk_areas": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "opportunity_classification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "primary_type",
+            "secondary_types"
+          ],
+          "properties": {
+            "primary_type": {
+              "type": "string"
+            },
+            "secondary_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "red_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "quick_wins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "companyFitResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "technical_fit",
+        "capability_gap_analysis",
+        "staffing_feasibility",
+        "sector_experience",
+        "technology_alignment",
+        "compliance_readiness",
+        "partner_gap_suggestions"
+      ],
+      "properties": {
+        "technical_fit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "score",
+            "matched_requirements",
+            "partial_matches",
+            "unmet_requirements"
+          ],
+          "properties": {
+            "score": {
+              "$ref": "#/$defs/score100"
+            },
+            "matched_requirements": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "partial_matches": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "unmet_requirements": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "capability_gap_analysis": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "gap",
+              "severity",
+              "mitigation_options"
+            ],
+            "properties": {
+              "gap": {
+                "type": "string"
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              },
+              "mitigation_options": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "staffing_feasibility": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "is_feasible",
+            "estimated_fte_required",
+            "estimated_fte_available",
+            "key_constraints"
+          ],
+          "properties": {
+            "is_feasible": {
+              "type": "boolean"
+            },
+            "estimated_fte_required": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "estimated_fte_available": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "key_constraints": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "sector_experience": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "alignment_score",
+            "relevant_case_studies"
+          ],
+          "properties": {
+            "alignment_score": {
+              "$ref": "#/$defs/score100"
+            },
+            "relevant_case_studies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "technology_alignment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "alignment_score",
+            "matched_technologies",
+            "missing_technologies"
+          ],
+          "properties": {
+            "alignment_score": {
+              "$ref": "#/$defs/score100"
+            },
+            "matched_technologies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "missing_technologies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "compliance_readiness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "readiness_score",
+            "met_requirements",
+            "unmet_requirements"
+          ],
+          "properties": {
+            "readiness_score": {
+              "$ref": "#/$defs/score100"
+            },
+            "met_requirements": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "unmet_requirements": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "partner_gap_suggestions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "networkInfluenceResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "network_strength",
+        "relationship_density",
+        "decision_maker_proximity",
+        "relationship_coverage",
+        "competitor_influence",
+        "recommended_actions"
+      ],
+      "properties": {
+        "network_strength": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "score",
+            "reasoning"
+          ],
+          "properties": {
+            "score": {
+              "$ref": "#/$defs/score100"
+            },
+            "reasoning": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "relationship_density": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "connection_count",
+            "department_spread"
+          ],
+          "properties": {
+            "connection_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "department_spread": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "decision_maker_proximity": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "stakeholder_role",
+              "proximity",
+              "connection_path_count"
+            ],
+            "properties": {
+              "stakeholder_role": {
+                "type": "string"
+              },
+              "proximity": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "indirect",
+                  "direct"
+                ]
+              },
+              "connection_path_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "relationship_coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "covered_functions",
+            "missing_functions"
+          ],
+          "properties": {
+            "covered_functions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "missing_functions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "competitor_influence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "relative_influence",
+            "notes"
+          ],
+          "properties": {
+            "relative_influence": {
+              "type": "string",
+              "enum": [
+                "weaker",
+                "similar",
+                "stronger"
+              ]
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "recommended_actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action",
+              "priority",
+              "expected_impact_score"
+            ],
+            "properties": {
+              "action": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              },
+              "expected_impact_score": {
+                "$ref": "#/$defs/score100"
+              }
+            }
+          }
+        }
+      }
+    },
+    "competitiveLandscapeResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "likely_competitors",
+        "incumbent_detection",
+        "competitive_advantage",
+        "partner_recommendations",
+        "win_probability",
+        "win_drivers",
+        "loss_risks"
+      ],
+      "properties": {
+        "likely_competitors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "confidence",
+              "rationale"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "incumbent_detection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "is_likely_incumbent_present",
+            "incumbent_name",
+            "confidence"
+          ],
+          "properties": {
+            "is_likely_incumbent_present": {
+              "type": "boolean"
+            },
+            "incumbent_name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "competitive_advantage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "technical",
+            "relational",
+            "pricing",
+            "niche_expertise"
+          ],
+          "properties": {
+            "technical": {
+              "$ref": "#/$defs/score100"
+            },
+            "relational": {
+              "$ref": "#/$defs/score100"
+            },
+            "pricing": {
+              "$ref": "#/$defs/score100"
+            },
+            "niche_expertise": {
+              "$ref": "#/$defs/score100"
+            }
+          }
+        },
+        "partner_recommendations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "partner_name",
+              "gap_closed",
+              "rationale"
+            ],
+            "properties": {
+              "partner_name": {
+                "type": "string"
+              },
+              "gap_closed": {
+                "type": "string"
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "win_probability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "score",
+            "band"
+          ],
+          "properties": {
+            "score": {
+              "$ref": "#/$defs/score100"
+            },
+            "band": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            }
+          }
+        },
+        "win_drivers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "loss_risks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "strategicBidIntelligenceResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bid_decision",
+        "pursuit_capacity",
+        "buyer_access",
+        "delivery_fit",
+        "strategic_desire",
+        "evidence_confidence",
+        "decision_blockers",
+        "decision_movers",
+        "recommended_research_actions",
+        "bid_strategy",
+        "narrative_positioning",
+        "differentiation_strategy",
+        "pricing_strategy",
+        "stakeholder_engagement",
+        "next_steps"
+      ],
+      "properties": {
+        "bid_decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decision_state",
+            "recommendation",
+            "confidence"
+          ],
+          "properties": {
+            "decision_state": {
+              "type": "string",
+              "enum": [
+                "Green",
+                "Amber",
+                "Red"
+              ]
+            },
+            "recommendation": {
+              "type": "string",
+              "enum": [
+                "Bid",
+                "Research",
+                "No Bid"
+              ]
+            },
+            "confidence": {
+              "$ref": "#/$defs/score100"
+            },
+            "decision_summary": {
+              "type": "string"
+            },
+            "rationale": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "why_now": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "pursuit_capacity": {
+          "$ref": "#/$defs/decisionDimension"
+        },
+        "buyer_access": {
+          "$ref": "#/$defs/decisionDimension"
+        },
+        "delivery_fit": {
+          "$ref": "#/$defs/decisionDimension"
+        },
+        "strategic_desire": {
+          "$ref": "#/$defs/decisionDimension"
+        },
+        "evidence_confidence": {
+          "$ref": "#/$defs/decisionDimension"
+        },
+        "decision_blockers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decision_movers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommended_research_actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/researchAction"
+          }
+        },
+        "bid_strategy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "posture",
+            "notes"
+          ],
+          "properties": {
+            "posture": {
+              "type": "string",
+              "enum": [
+                "prime_contractor",
+                "consortium_lead",
+                "specialist_partner"
+              ]
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "narrative_positioning": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "differentiation_strategy": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pricing_strategy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pricing_posture",
+            "notes"
+          ],
+          "properties": {
+            "pricing_posture": {
+              "type": "string",
+              "enum": [
+                "premium",
+                "market",
+                "value",
+                "penetration"
+              ]
+            },
+            "target_price_band": {
+              "$ref": "#/$defs/money"
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "stakeholder_engagement": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action",
+              "target_stakeholder",
+              "timing"
+            ],
+            "properties": {
+              "action": {
+                "type": "string"
+              },
+              "target_stakeholder": {
+                "type": "string"
+              },
+              "timing": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "next_steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "step",
+              "owner",
+              "due_in_days"
+            ],
+            "properties": {
+              "step": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "due_in_days": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "crossOpportunityResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compared_opportunities",
+        "ranking",
+        "portfolio_recommendation",
+        "pipeline_forecast",
+        "resource_plan"
+      ],
+      "properties": {
+        "compared_opportunities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "ranking": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "opportunity_id",
+              "rank",
+              "win_probability",
+              "strategic_value",
+              "complexity"
+            ],
+            "properties": {
+              "opportunity_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "rank": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "win_probability": {
+                "$ref": "#/$defs/score100"
+              },
+              "strategic_value": {
+                "$ref": "#/$defs/score100"
+              },
+              "complexity": {
+                "$ref": "#/$defs/score100"
+              }
+            }
+          }
+        },
+        "portfolio_recommendation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pursue_now",
+            "monitor",
+            "deprioritise"
+          ],
+          "properties": {
+            "pursue_now": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "monitor": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "deprioritise": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        },
+        "pipeline_forecast": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "expected_revenue_90d",
+            "expected_revenue_180d",
+            "expected_win_count"
+          ],
+          "properties": {
+            "expected_revenue_90d": {
+              "$ref": "#/$defs/money"
+            },
+            "expected_revenue_180d": {
+              "$ref": "#/$defs/money"
+            },
+            "expected_win_count": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "resource_plan": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "opportunity_id",
+              "recommended_fte_allocation"
+            ],
+            "properties": {
+              "opportunity_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "recommended_fte_allocation": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "addendaChangeResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compared_versions",
+        "change_log",
+        "impact_assessment",
+        "risk_delta",
+        "required_updates",
+        "urgency_level"
+      ],
+      "properties": {
+        "compared_versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "change_log": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "change_type",
+              "section",
+              "description",
+              "severity"
+            ],
+            "properties": {
+              "change_type": {
+                "type": "string",
+                "enum": [
+                  "added",
+                  "removed",
+                  "modified"
+                ]
+              },
+              "section": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              }
+            }
+          }
+        },
+        "impact_assessment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy_change_required",
+            "summary"
+          ],
+          "properties": {
+            "strategy_change_required": {
+              "type": "boolean"
+            },
+            "summary": {
+              "type": "string"
+            }
+          }
+        },
+        "risk_delta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "previous_risk_score",
+            "current_risk_score"
+          ],
+          "properties": {
+            "previous_risk_score": {
+              "$ref": "#/$defs/score100"
+            },
+            "current_risk_score": {
+              "$ref": "#/$defs/score100"
+            }
+          }
+        },
+        "required_updates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "update",
+              "owner",
+              "deadline_utc"
+            ],
+            "properties": {
+              "update": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "deadline_utc": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "urgency_level": {
+          "type": "string",
+          "enum": [
+            "Low",
+            "Medium",
+            "High",
+            "Critical"
+          ]
+        }
+      }
+    },
+    "knowledgeBaseResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reusable_content",
+        "case_study_matches",
+        "knowledge_gaps",
+        "content_requests",
+        "reuse_priority_order",
+        "estimated_time_saved_hours"
+      ],
+      "properties": {
+        "reusable_content": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_bid_id",
+              "section",
+              "reuse_score"
+            ],
+            "properties": {
+              "source_bid_id": {
+                "type": "string"
+              },
+              "section": {
+                "type": "string"
+              },
+              "reuse_score": {
+                "$ref": "#/$defs/score100"
+              },
+              "notes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "case_study_matches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "case_study_id",
+              "relevance_score"
+            ],
+            "properties": {
+              "case_study_id": {
+                "type": "string"
+              },
+              "relevance_score": {
+                "$ref": "#/$defs/score100"
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "knowledge_gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "gap",
+              "priority"
+            ],
+            "properties": {
+              "gap": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              }
+            }
+          }
+        },
+        "content_requests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "request_type",
+              "brief"
+            ],
+            "properties": {
+              "request_type": {
+                "type": "string"
+              },
+              "brief": {
+                "type": "string"
+              },
+              "owner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "reuse_priority_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "estimated_time_saved_hours": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

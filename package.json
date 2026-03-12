@@ -1,0 +1,49 @@
+{
+  "name": "bb-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "video:install-browser": "playwright install chromium",
+    "video:list": "tsx scripts/video/list-flows.ts",
+    "video:record": "tsx scripts/video/record-golden-path.ts",
+    "video:record:auto": "tsx scripts/video/record-golden-path.ts --mode auto"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.98.0",
+    "better-sqlite3": "^12.6.2",
+    "clsx": "^2.1.0",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.3.1",
+    "gsap": "^3.14.2",
+    "lucide-react": "^0.460.0",
+    "mammoth": "^1.11.0",
+    "next": "^16.0.0",
+    "openai": "^6.27.0",
+    "pdfjs-dist": "^5.5.207",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "supabase": "^2.77.0",
+    "tailwind-merge": "^2.5.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.0.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.0"
+  }
+}
