@@ -1,12 +1,17 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { CONNECTOR_IDS } from "@/lib/connectors/catalog";
 import {
-  assertLinkedInCompanyAdminConfiguration,
   buildLinkedInCompanyAdminAuthorizeUrl,
   createLinkedInCompanyAdminPkcePair,
+  getLinkedInClientCredentialsFromConfig,
   isLinkedInCompanyAdminPkceEnabled,
+  resolveLinkedInClientCredentials,
 } from "@/lib/connectors/linkedin-company-admin";
-import { getAuthenticatedTenantContext } from "@/lib/connectors/server";
+import {
+  getAuthenticatedTenantContext,
+  parseJsonRecord,
+} from "@/lib/connectors/server";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +30,13 @@ function buildStartErrorRedirect(requestUrl: string, next: string, detail: strin
   return destination;
 }
 
+function buildSetupRedirect(requestUrl: string, next: string) {
+  const destination = new URL(next, requestUrl);
+  destination.searchParams.set("linkedin_admin", "setup");
+  destination.searchParams.set("detail", "Enter your LinkedIn app credentials to authorise company pages.");
+  return destination;
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const next = isSafeRelativePath(url.searchParams.get("next"))
@@ -37,7 +49,24 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL("/auth/signin?error=auth_required", request.url));
     }
 
-    assertLinkedInCompanyAdminConfiguration();
+    const { supabase, tenantId } = context;
+
+    const { data: connector } = await supabase
+      .from("connector_sources")
+      .select("config")
+      .eq("tenant_id", tenantId)
+      .eq("id", CONNECTOR_IDS.linkedinCompanyAdmin)
+      .maybeSingle();
+
+    const config = parseJsonRecord(connector?.config);
+    const credentialsFromConfig = getLinkedInClientCredentialsFromConfig(config);
+
+    let credentials;
+    try {
+      credentials = resolveLinkedInClientCredentials(credentialsFromConfig);
+    } catch {
+      return NextResponse.redirect(buildSetupRedirect(request.url, next));
+    }
 
     const redirectUri = `${url.origin}/api/connectors/linkedin/company-admin/auth/callback`;
     const state = crypto.randomUUID();
@@ -73,11 +102,14 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.redirect(
-      buildLinkedInCompanyAdminAuthorizeUrl({
-        redirectUri,
-        state,
-        challenge: pkcePair?.challenge,
-      })
+      buildLinkedInCompanyAdminAuthorizeUrl(
+        {
+          redirectUri,
+          state,
+          challenge: pkcePair?.challenge,
+        },
+        credentials
+      )
     );
   } catch (error) {
     return NextResponse.redirect(

@@ -26,6 +26,23 @@ npm start
 
 Docs live in `docs/`. See [docs/README.md](./docs/README.md) for the index.
 
+## Push to GitHub
+
+From this directory, using the **lincblender** account:
+
+```bash
+git add . && git commit -m "Initial split from BidBlender"   # if uncommitted
+gh auth login   # if not already logged in as lincblender
+gh repo create lincblender/bb-app --public --source=. --remote=origin --push
+```
+
+If the repo already exists:
+
+```bash
+git remote add origin https://github.com/lincblender/bb-app.git
+git push -u origin main
+```
+
 ## Related
 
 - **bb-web** — Marketing site (bidblender.com)

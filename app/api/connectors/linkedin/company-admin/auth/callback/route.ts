@@ -4,7 +4,9 @@ import { CONNECTOR_IDS } from "@/lib/connectors/catalog";
 import {
   buildLinkedInCompanyAdminConnectorConfig,
   exchangeLinkedInCompanyAdminAuthorizationCode,
+  getLinkedInClientCredentialsFromConfig,
   isLinkedInCompanyAdminPkceEnabled,
+  resolveLinkedInClientCredentials,
   runLinkedInCompanyAdminSync,
 } from "@/lib/connectors/linkedin-company-admin";
 import {
@@ -82,27 +84,46 @@ export async function GET(request: Request) {
 
   const { supabase, tenantId } = context;
 
+  const { data: existingConnector, error: existingConnectorError } = await supabase
+    .from("connector_sources")
+    .select("config")
+    .eq("tenant_id", tenantId)
+    .eq("id", CONNECTOR_IDS.linkedinCompanyAdmin)
+    .maybeSingle();
+
+  if (existingConnectorError) {
+    return NextResponse.redirect(
+      buildRedirect(request.url, next, "error", "Could not load connector configuration.")
+    );
+  }
+
+  const existingConfig = parseJsonRecord(existingConnector?.config);
+  const credentialsFromConfig = getLinkedInClientCredentialsFromConfig(existingConfig);
+  let credentials;
+  try {
+    credentials = resolveLinkedInClientCredentials(credentialsFromConfig);
+  } catch {
+    return NextResponse.redirect(
+      buildRedirect(
+        request.url,
+        next,
+        "error",
+        "LinkedIn app credentials are missing. Please add your Client ID and Secret in the connector setup."
+      )
+    );
+  }
+
   try {
     const redirectUri = `${url.origin}/api/connectors/linkedin/company-admin/auth/callback`;
-    const tokens = await exchangeLinkedInCompanyAdminAuthorizationCode({
-      code,
-      redirectUri,
-      verifier,
-    });
+    const tokens = await exchangeLinkedInCompanyAdminAuthorizationCode(
+      {
+        code,
+        redirectUri,
+        verifier,
+      },
+      credentials
+    );
     const syncResult = await runLinkedInCompanyAdminSync(tokens.access_token);
-
-    const { data: existingConnector, error: existingConnectorError } = await supabase
-      .from("connector_sources")
-      .select("config")
-      .eq("tenant_id", tenantId)
-      .eq("id", CONNECTOR_IDS.linkedinCompanyAdmin)
-      .maybeSingle();
-
-    if (existingConnectorError) {
-      throw existingConnectorError;
-    }
-
-    const existingConfig = parseJsonRecord(existingConnector?.config);
     await upsertConnectorSource(supabase, tenantId, {
       id: CONNECTOR_IDS.linkedinCompanyAdmin,
       status: "live",

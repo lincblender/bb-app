@@ -105,6 +105,8 @@ export default function ConnectorsPage() {
     null
   );
   const [actionHandled, setActionHandled] = useState<string | null>(null);
+  const [showLinkedInCompanySetup, setShowLinkedInCompanySetup] = useState(false);
+  const [linkedInSetupError, setLinkedInSetupError] = useState<string | null>(null);
 
   useEffect(() => {
     createClient()
@@ -235,6 +237,37 @@ export default function ConnectorsPage() {
     }
   };
 
+  const handleLinkedInCompanySetupSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const clientId = (form.elements.namedItem("linkedin_client_id") as HTMLInputElement)?.value?.trim();
+    const clientSecret = (form.elements.namedItem("linkedin_client_secret") as HTMLInputElement)?.value?.trim();
+    if (!clientId || !clientSecret) {
+      setLinkedInSetupError("Both Client ID and Client Secret are required.");
+      return;
+    }
+    setLoadingAction("linkedin-company-setup");
+    setLinkedInSetupError(null);
+    try {
+      const res = await fetch("/api/connectors/linkedin/company-admin/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setLinkedInSetupError(data.error ?? "Setup failed.");
+        return;
+      }
+      setShowLinkedInCompanySetup(false);
+      window.location.assign("/api/connectors/linkedin/company-admin/auth/start?next=/console/connectors");
+    } catch {
+      setLinkedInSetupError("Setup failed. Please try again.");
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
   useEffect(() => {
     const hubspotStatus = searchParams.get("hubspot");
     const linkedInAdminStatus = searchParams.get("linkedin_admin");
@@ -244,18 +277,23 @@ export default function ConnectorsPage() {
       return;
     }
 
-    setFeedback({
-      tone: connectorStatus === "connected" ? "positive" : "warning",
-      text:
-        detail ||
-        (hubspotStatus
-          ? hubspotStatus === "connected"
-            ? "HubSpot connected."
-            : "HubSpot action failed."
-          : linkedInAdminStatus === "connected"
-            ? "LinkedIn company-page access connected."
-            : "LinkedIn company-page action failed."),
-    });
+    if (linkedInAdminStatus === "setup") {
+      setShowLinkedInCompanySetup(true);
+      setLinkedInSetupError(null);
+    } else {
+      setFeedback({
+        tone: connectorStatus === "connected" ? "positive" : "warning",
+        text:
+          detail ||
+          (hubspotStatus
+            ? hubspotStatus === "connected"
+              ? "HubSpot connected."
+              : "HubSpot action failed."
+            : linkedInAdminStatus === "connected"
+              ? "LinkedIn company-page access connected."
+              : "LinkedIn company-page action failed."),
+      });
+    }
 
     const params = new URLSearchParams(searchParams.toString());
     params.delete("hubspot");
@@ -387,20 +425,93 @@ export default function ConnectorsPage() {
                 actionArea={
                   linkedInConnected ? (
                     <div className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="high" className="flex w-fit items-center gap-1">
-                          <CheckCircle2 size={14} />
-                          LinkedIn sign-in
-                        </Badge>
-                        {linkedInManagedOrganizations.length > 0 && (
-                          <Badge variant="positive" className="flex w-fit items-center gap-1">
-                            <CheckCircle2 size={14} />
-                            {linkedInManagedOrganizations.length} company
-                            {linkedInManagedOrganizations.length === 1 ? " page" : " pages"}
-                          </Badge>
-                        )}
-                      </div>
-                      {linkedInManagedOrganizations.length > 0 && (
+                      {showLinkedInCompanySetup ? (
+                        <form
+                          onSubmit={handleLinkedInCompanySetupSubmit}
+                          className="space-y-3 rounded-2xl border border-gray-700/70 bg-bb-dark px-4 py-3"
+                        >
+                          <p className="text-sm text-gray-300">
+                            Add your LinkedIn app credentials. Create an app at{" "}
+                            <a
+                              href="https://www.linkedin.com/developers/apps"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-bb-coral hover:underline"
+                            >
+                              developers.linkedin.com
+                            </a>{" "}
+                            and add the redirect URL for your environment.
+                          </p>
+                          <div className="space-y-2">
+                            <label htmlFor="linkedin_client_id" className="block text-xs font-medium text-gray-400">
+                              Client ID
+                            </label>
+                            <input
+                              id="linkedin_client_id"
+                              name="linkedin_client_id"
+                              type="text"
+                              autoComplete="off"
+                              placeholder="Your LinkedIn app Client ID"
+                              className="w-full rounded-lg border border-gray-600 bg-bb-dark-elevated px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-bb-powder-blue focus:outline-none focus:ring-1 focus:ring-bb-powder-blue"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label htmlFor="linkedin_client_secret" className="block text-xs font-medium text-gray-400">
+                              Client Secret
+                            </label>
+                            <input
+                              id="linkedin_client_secret"
+                              name="linkedin_client_secret"
+                              type="password"
+                              autoComplete="off"
+                              placeholder="Your LinkedIn app Client Secret"
+                              className="w-full rounded-lg border border-gray-600 bg-bb-dark-elevated px-3 py-2 text-sm text-gray-100 placeholder:text-gray-500 focus:border-bb-powder-blue focus:outline-none focus:ring-1 focus:ring-bb-powder-blue"
+                            />
+                          </div>
+                          {linkedInSetupError && (
+                            <p className="text-sm text-bb-orange">{linkedInSetupError}</p>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="submit"
+                              disabled={loadingAction === "linkedin-company-setup"}
+                              className="inline-flex items-center gap-2 rounded-lg bg-[#0a66c2] px-4 py-2 text-sm font-medium text-white hover:bg-[#004182] disabled:opacity-60"
+                            >
+                              {loadingAction === "linkedin-company-setup" ? (
+                                <RefreshCw size={16} className="animate-spin" />
+                              ) : (
+                                <ExternalLink size={16} />
+                              )}
+                              Save and authorise
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowLinkedInCompanySetup(false);
+                                setLinkedInSetupError(null);
+                              }}
+                              className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-gray-200 hover:border-bb-powder-blue hover:text-white"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="high" className="flex w-fit items-center gap-1">
+                              <CheckCircle2 size={14} />
+                              LinkedIn sign-in
+                            </Badge>
+                            {linkedInManagedOrganizations.length > 0 && (
+                              <Badge variant="positive" className="flex w-fit items-center gap-1">
+                                <CheckCircle2 size={14} />
+                                {linkedInManagedOrganizations.length} company
+                                {linkedInManagedOrganizations.length === 1 ? " page" : " pages"}
+                              </Badge>
+                            )}
+                          </div>
+                          {linkedInManagedOrganizations.length > 0 && (
                         <div className="space-y-2 rounded-2xl border border-gray-700/70 bg-bb-dark px-4 py-3 text-sm text-gray-300">
                           {linkedInManagedOrganizations.slice(0, 3).map((organization) => (
                             <div key={String(organization.id)}>
@@ -433,6 +544,15 @@ export default function ConnectorsPage() {
                             ? "Reconnect company pages"
                             : "Authorise company pages"}
                         </button>
+                        {!showLinkedInCompanySetup && (
+                          <button
+                            type="button"
+                            onClick={() => setShowLinkedInCompanySetup(true)}
+                            className="text-sm text-gray-400 hover:text-bb-coral"
+                          >
+                            Add credentials
+                          </button>
+                        )}
                         {linkedInCompanyAdminConnector?.status === "live" && (
                           <button
                             type="button"
@@ -467,6 +587,8 @@ export default function ConnectorsPage() {
                           Open network view
                           <ArrowRight size={16} />
                         </Link>
+                      )}
+                        </>
                       )}
                     </div>
                   ) : (

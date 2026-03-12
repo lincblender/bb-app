@@ -33,9 +33,37 @@
 
 ### 2. GitHub
 
-- [ ] Create `bidblender-marketing` repo (or your preferred name)
-- [ ] Create `bidblender-app` repo
-- [ ] Decide: monorepo with `apps/marketing` + `apps/app`, or two separate repos. Plan assumes **two separate repos** for clean separation.
+Use the **lincblender** account (not lincalinca). Ensure `gh` is logged in to the correct account:
+
+```bash
+gh auth login
+# Select GitHub.com, HTTPS, then authenticate as lincblender
+gh auth status  # verify active account
+```
+
+Create repos (from bb-web and bb-app directories):
+
+```bash
+# Marketing site
+cd ~/Dev-Work/bb-web
+gh repo create lincblender/bb-web --public --source=. --remote=origin --push
+
+# App
+cd ~/Dev-Work/bb-app
+gh repo create lincblender/bb-app --public --source=. --remote=origin --push
+```
+
+Or create manually at https://github.com/new, then:
+
+```bash
+git remote add origin https://github.com/lincblender/bb-web.git   # in bb-web
+git remote add origin https://github.com/lincblender/bb-app.git   # in bb-app
+git push -u origin main
+```
+
+- [ ] Create `bb-web` repo under lincblender
+- [ ] Create `bb-app` repo under lincblender
+- [ ] Connect each to its Vercel project
 
 ### 3. Vercel
 

@@ -63,9 +63,23 @@ const DEFAULT_LINKEDIN_API_VERSION = "202602";
 const DEFAULT_LINKEDIN_COMPANY_ADMIN_SCOPES = "r_organization_admin";
 const PKCE_TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
 
-function getLinkedInClientCredentials() {
-  const clientId = process.env.LINKEDIN_CLIENT_ID;
-  const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+export interface LinkedInClientCredentials {
+  clientId: string;
+  clientSecret: string;
+}
+
+export function getLinkedInClientCredentialsFromConfig(config: Record<string, unknown>): LinkedInClientCredentials | null {
+  const clientId = typeof config.linkedin_client_id === "string" ? config.linkedin_client_id.trim() : undefined;
+  const clientSecret = typeof config.linkedin_client_secret === "string" ? config.linkedin_client_secret.trim() : undefined;
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+  return { clientId, clientSecret };
+}
+
+export function resolveLinkedInClientCredentials(override?: LinkedInClientCredentials | null): LinkedInClientCredentials {
+  const clientId = override?.clientId ?? process.env.LINKEDIN_CLIENT_ID?.trim();
+  const clientSecret = override?.clientSecret ?? process.env.LINKEDIN_CLIENT_SECRET?.trim();
 
   if (!clientId) {
     throw new Error("Missing LINKEDIN_CLIENT_ID.");
@@ -233,8 +247,8 @@ export function isLinkedInCompanyAdminPkceEnabled() {
   return raw ? PKCE_TRUE_VALUES.has(raw) : false;
 }
 
-export function assertLinkedInCompanyAdminConfiguration() {
-  return getLinkedInClientCredentials();
+export function assertLinkedInCompanyAdminConfiguration(override?: LinkedInClientCredentials | null) {
+  return resolveLinkedInClientCredentials(override);
 }
 
 export function createLinkedInCompanyAdminPkcePair() {
@@ -243,12 +257,15 @@ export function createLinkedInCompanyAdminPkcePair() {
   return { verifier, challenge };
 }
 
-export function buildLinkedInCompanyAdminAuthorizeUrl(options: {
-  redirectUri: string;
-  state: string;
-  challenge?: string;
-}) {
-  const { clientId } = getLinkedInClientCredentials();
+export function buildLinkedInCompanyAdminAuthorizeUrl(
+  options: {
+    redirectUri: string;
+    state: string;
+    challenge?: string;
+  },
+  credentialsOverride?: LinkedInClientCredentials | null
+) {
+  const { clientId } = resolveLinkedInClientCredentials(credentialsOverride);
   const url = new URL(LINKEDIN_AUTHORIZE_URL);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("client_id", clientId);
@@ -264,12 +281,15 @@ export function buildLinkedInCompanyAdminAuthorizeUrl(options: {
   return url.toString();
 }
 
-export async function exchangeLinkedInCompanyAdminAuthorizationCode(options: {
-  code: string;
-  redirectUri: string;
-  verifier?: string;
-}) {
-  const { clientId, clientSecret } = getLinkedInClientCredentials();
+export async function exchangeLinkedInCompanyAdminAuthorizationCode(
+  options: {
+    code: string;
+    redirectUri: string;
+    verifier?: string;
+  },
+  credentialsOverride?: LinkedInClientCredentials | null
+) {
+  const { clientId, clientSecret } = resolveLinkedInClientCredentials(credentialsOverride);
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code: options.code,

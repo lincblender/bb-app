@@ -32,13 +32,15 @@ If your approved app requires broader page-management access for the endpoints y
 
 - `rw_organization_admin`
 
-## Environment variables
+## Credentials
 
-Add these to `.env.local` and the deployment environment:
+**Per-user (recommended):** Each user enters their LinkedIn app Client ID and Secret in the connector setup. When you click "Authorise company pages" without credentials, the app prompts you to add them. Credentials are stored in `connector_sources.config` per tenant.
+
+**Environment fallback:** You can still set `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` in `.env.local` for development or when all users share the same LinkedIn app. Stored config takes precedence over env vars when both exist.
+
+Optional env vars:
 
 ```bash
-LINKEDIN_CLIENT_ID=your_linkedin_app_client_id
-LINKEDIN_CLIENT_SECRET=your_linkedin_app_client_secret
 LINKEDIN_COMPANY_ADMIN_SCOPES="r_organization_admin"
 LINKEDIN_API_VERSION=202602
 LINKEDIN_COMPANY_ADMIN_USE_PKCE=false
