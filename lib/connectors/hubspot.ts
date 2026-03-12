@@ -82,6 +82,69 @@ function summariseText(value: string, maxLength = 420) {
   return `${cleaned.slice(0, maxLength - 1).trim()}…`;
 }
 
+function humanisePreview(raw: string, entity: HubSpotEntity): string {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+    return summariseText(trimmed);
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+    const results = Array.isArray(parsed.results) ? parsed.results : [];
+
+    if (entity === "deals") {
+      const items = results.slice(0, 5).map((r) => {
+        const rec = r as Record<string, unknown>;
+        const props = (rec.properties as Record<string, unknown>) ?? {};
+        const name = String(props.dealname ?? props.name ?? "Deal");
+        const amount = props.amount;
+        const amountStr =
+          typeof amount === "string" || typeof amount === "number"
+            ? ` ($${Number(amount).toLocaleString()})`
+            : "";
+        return `${name}${amountStr}`;
+      });
+      return items.length > 0
+        ? `${results.length} deal${results.length === 1 ? "" : "s"}: ${items.join(", ")}${results.length > 5 ? "…" : ""}`
+        : "No deals returned.";
+    }
+
+    if (entity === "companies") {
+      const first = results[0] as Record<string, unknown> | undefined;
+      const hasSchemaKeys = first && ("name" in first || "label" in first) && "description" in first;
+      if (hasSchemaKeys) {
+        return `${results.length} company propert${results.length === 1 ? "y" : "ies"} available for sync.`;
+      }
+      const items = results.slice(0, 5).map((r) => {
+        const rec = r as Record<string, unknown>;
+        const props = (rec.properties as Record<string, unknown>) ?? rec;
+        return String(props.name ?? props.domain ?? props.company ?? "Company");
+      });
+      return items.length > 0
+        ? `${results.length} compan${results.length === 1 ? "y" : "ies"}: ${items.join(", ")}${results.length > 5 ? "…" : ""}`
+        : "No companies returned.";
+    }
+
+    if (entity === "contacts") {
+      const items = results.slice(0, 5).map((r) => {
+        const rec = r as Record<string, unknown>;
+        const props = (rec.properties as Record<string, unknown>) ?? rec;
+        const first = String(props.firstname ?? props.first_name ?? "");
+        const last = String(props.lastname ?? props.last_name ?? "");
+        const email = String(props.email ?? "");
+        return [first, last].filter(Boolean).join(" ") || email || "Contact";
+      });
+      return items.length > 0
+        ? `${results.length} contact${results.length === 1 ? "" : "s"}: ${items.join(", ")}${results.length > 5 ? "…" : ""}`
+        : "No contacts returned.";
+    }
+  } catch {
+    return summariseText(trimmed);
+  }
+
+  return summariseText(trimmed);
+}
+
 function getToolText(result: { content: Array<{ type: string; text?: string }> }) {
   return result.content
     .filter((item) => item.type === "text" && typeof item.text === "string")
@@ -371,7 +434,8 @@ export async function runHubSpotSelectiveSync(
 
     try {
       const result = await callMcpTool(config, candidate.name, args);
-      const preview = summariseText(getToolText(result));
+      const rawText = getToolText(result);
+      const preview = humanisePreview(rawText, entity);
 
       if (!preview) {
         warnings.push(`HubSpot ${entity} preview returned no readable text.`);

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       name: catalogConnector?.name ?? "LinkedIn Company Pages",
       status: "disconnected",
       sourceType: catalogConnector?.sourceType ?? "network",
-      contribution: catalogConnector?.contribution ?? null,
+      contribution: catalogConnector?.contribution,
       config: {
         linkedin_client_id: clientId,
         linkedin_client_secret: clientSecret,

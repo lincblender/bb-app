@@ -93,24 +93,24 @@ export const CORE_TENDER_BOARDS: TenderBoard[] = [
 
 export const SETUP_PILLARS: SetupPillarDefinition[] = [
   {
-    id: "reach",
-    title: "Reach via LinkedIn",
-    eyebrow: "Pillar 1",
-    body:
-      "Connect the user's LinkedIn identity first, then authorise company-page access if they administer a LinkedIn page. The goal is role-aware company context, not social-graph replication.",
-    connectorId: CONNECTOR_IDS.linkedin,
-    href: "/console/connectors?action=connect-linkedin",
-    actionQuery: "connect-linkedin",
-  },
-  {
     id: "history",
     title: "History via HubSpot",
-    eyebrow: "Pillar 2",
+    eyebrow: "Pillar 1",
     body:
-      "Connect HubSpot next, then pull only essential deal, company, and contact history. Start lean and fetch deeper context only when an opportunity or client view needs it.",
+      "Start with CRM history so BidBlender can ground qualification in recent sales memory. Connect HubSpot, then pull only essential deal, company, and contact history. Start lean and fetch deeper context only when an opportunity or client view needs it.",
     connectorId: CONNECTOR_IDS.hubspot,
     href: "/console/connectors?action=connect-hubspot",
     actionQuery: "connect-hubspot",
+  },
+  {
+    id: "opportunity",
+    title: "Opportunity via AusTender RSS",
+    eyebrow: "Pillar 2",
+    body:
+      "Choose the market source. Use the official AusTender RSS feed as the interim opportunity source. Import a limited set of current notices, then enrich selectively as the user opens them.",
+    connectorId: CONNECTOR_IDS.austender,
+    href: "/console/connectors?action=sync-austender",
+    actionQuery: "sync-austender",
   },
   {
     id: "capability",
@@ -121,14 +121,14 @@ export const SETUP_PILLARS: SetupPillarDefinition[] = [
     href: "/console/organisation",
   },
   {
-    id: "opportunity",
-    title: "Opportunity via AusTender RSS",
+    id: "reach",
+    title: "Reach via LinkedIn",
     eyebrow: "Pillar 4",
     body:
-      "Use the official AusTender RSS feed as the interim opportunity source. Import a limited set of current notices, then enrich selectively as the user opens them.",
-    connectorId: CONNECTOR_IDS.austender,
-    href: "/console/connectors?action=sync-austender",
-    actionQuery: "sync-austender",
+      "Connect the user's LinkedIn identity first, then authorise company-page access if they administer a LinkedIn page. The goal is role-aware company context, not social-graph replication.",
+    connectorId: CONNECTOR_IDS.linkedin,
+    href: "/console/connectors?action=connect-linkedin",
+    actionQuery: "connect-linkedin",
   },
 ];
 
