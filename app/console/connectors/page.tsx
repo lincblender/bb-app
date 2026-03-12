@@ -1,12 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
   Briefcase,
   CheckCircle2,
-  ExternalLink,
   History,
   Linkedin,
   RefreshCw,
@@ -14,7 +14,6 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { mcpLibrary } from "@/lib/mcp/library";
-import { formatHubSpotPreviewForDisplay } from "./utils";
 import { ConnectorCard } from "./ConnectorCard";
 import { PILLAR_DISPLAY_CONFIG } from "./pillar-config";
 import { useConnectorActions } from "./useConnectorActions";
@@ -38,10 +37,8 @@ function PillarActions({
   showLinkedInCompanySetup: boolean;
   setShowLinkedInCompanySetup: (v: boolean) => void;
 }) {
-  const btn = "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-60";
-  const primary = "bg-bb-coral text-white hover:bg-bb-coral/90";
-  const secondary = "border border-gray-600 text-gray-200 hover:border-bb-powder-blue hover:text-white";
-  const link = "text-sm font-medium text-bb-coral hover:text-bb-coral/85";
+  const btn = "inline-flex items-center gap-2 rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-60 disabled:hover:border-gray-600";
+  const link = "inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-bb-coral";
 
   if (pillarId === "reach") {
     if (!data.linkedInConnected) {
@@ -50,10 +47,10 @@ function PillarActions({
           type="button"
           onClick={actions.handleConnectLinkedIn}
           disabled={loadingAction === "connect-linkedin"}
-          className={`${btn} ${primary}`}
+          className={btn}
         >
-          {loadingAction === "connect-linkedin" ? <RefreshCw size={16} className="animate-spin" /> : <Linkedin size={16} />}
-          Connect LinkedIn
+          {loadingAction === "connect-linkedin" ? <RefreshCw size={14} className="animate-spin" /> : <Linkedin size={14} />}
+          Connect with LinkedIn
         </button>
       );
     }
@@ -63,9 +60,9 @@ function PillarActions({
           type="button"
           onClick={actions.handleConnectLinkedInCompanyAdmin}
           disabled={loadingAction === "connect-linkedin-company-admin"}
-          className={`${btn} ${primary}`}
+          className={btn}
         >
-          {loadingAction === "connect-linkedin-company-admin" ? <RefreshCw size={16} className="animate-spin" /> : <ExternalLink size={16} />}
+          {loadingAction === "connect-linkedin-company-admin" ? <RefreshCw size={14} className="animate-spin" /> : <Linkedin size={14} />}
           {data.linkedInCompanyAdminConnector?.status === "live" ? "Reconnect" : "Authorise company pages"}
         </button>
         <button type="button" onClick={() => setShowLinkedInCompanySetup(true)} className={link}>
@@ -76,15 +73,15 @@ function PillarActions({
             type="button"
             onClick={() => void runPostAction("sync-linkedin-company-admin", "/api/connectors/linkedin/company-admin/sync", (b) => `Refreshed ${Array.isArray(b.organizations) ? b.organizations.length : 0} organisations.`)}
             disabled={loadingAction === "sync-linkedin-company-admin"}
-            className={`${btn} ${secondary}`}
+            className={btn}
           >
-            {loadingAction === "sync-linkedin-company-admin" ? <RefreshCw size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            {loadingAction === "sync-linkedin-company-admin" ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
             Sync
           </button>
         )}
         {(data.linkedInManagedOrganizations.length > 0 || data.linkedInIdentityConnector?.status === "live") && (
-          <Link href="/console/network" className={`${link} inline-flex items-center gap-1`}>
-            Open network <ArrowRight size={14} />
+          <Link href="/console/network" className={link}>
+            View in network <ArrowRight size={12} />
           </Link>
         )}
       </>
@@ -98,28 +95,37 @@ function PillarActions({
           type="button"
           onClick={actions.handleConnectHubSpot}
           disabled={loadingAction === "connect-hubspot"}
-          className={`${btn} ${primary}`}
+          className={btn}
         >
-          {loadingAction === "connect-hubspot" ? <RefreshCw size={16} className="animate-spin" /> : <ExternalLink size={16} />}
-          {data.hubspotConnector?.status === "live" ? "Reconnect" : "Authorise HubSpot"}
+          {loadingAction === "connect-hubspot" ? (
+            <RefreshCw size={14} className="animate-spin" />
+          ) : (
+            <Image src="/icons/hubspot.svg" alt="" width={14} height={14} />
+          )}
+          {data.hubspotConnector?.status === "live" ? "Reconnect" : "Connect with HubSpot"}
         </button>
         <button
           type="button"
           onClick={() => void runPostAction("sync-hubspot", "/api/connectors/hubspot/sync", (b) => `Refreshed ${Array.isArray(b.previews) ? b.previews.length : 0} previews.`)}
           disabled={loadingAction === "sync-hubspot"}
-          className={`${btn} ${secondary}`}
+          className={btn}
         >
-          {loadingAction === "sync-hubspot" ? <RefreshCw size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-          Sync essentials
+          {loadingAction === "sync-hubspot" ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          Sync
         </button>
+        {data.hubspotConnector?.status === "live" && (
+          <Link href="/console/network" className={link}>
+            View in network <ArrowRight size={12} />
+          </Link>
+        )}
       </>
     );
   }
 
   if (pillarId === "capability") {
     return (
-      <Link href="/console/organisation" className={`${btn} ${primary} w-fit`}>
-        Open organisation profile <ArrowRight size={16} />
+      <Link href="/console/organisation" className={btn}>
+        Open organisation profile <ArrowRight size={12} />
       </Link>
     );
   }
@@ -131,13 +137,13 @@ function PillarActions({
           type="button"
           onClick={() => void runPostAction("sync-austender", "/api/connectors/austender/sync", (b) => `Imported ${typeof b.importedCount === "number" ? b.importedCount : 0} notices.`)}
           disabled={loadingAction === "sync-austender"}
-          className={`${btn} ${primary}`}
+          className={btn}
         >
-          {loadingAction === "sync-austender" ? <RefreshCw size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+          {loadingAction === "sync-austender" ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           Sync AusTender
         </button>
-        <Link href="/console/opportunities" className={`${link} inline-flex items-center gap-1`}>
-          Open opportunity explorer <ArrowRight size={14} />
+        <Link href="/console/opportunities" className={link}>
+          View opportunities <ArrowRight size={12} />
         </Link>
       </>
     );
@@ -191,32 +197,6 @@ function PillarContent({
           </button>
         </div>
       </form>
-    );
-  }
-
-  if (pillarId === "reach" && data.linkedInManagedOrganizations.length > 0) {
-    return (
-      <div className="space-y-1 rounded-xl border border-gray-700/60 bg-bb-dark px-3 py-2 text-xs">
-        {data.linkedInManagedOrganizations.slice(0, 2).map((org) => (
-          <div key={String(org.id)}>
-            <span className="font-medium text-gray-200">{String(org.name)}</span>
-            <span className="ml-2 text-gray-500">{Array.isArray(org.roles) ? org.roles.join(", ") : ""}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (pillarId === "history" && data.hubspotPreview.length > 0) {
-    return (
-      <div className="space-y-1 rounded-xl border border-gray-700/60 bg-bb-dark px-3 py-2 text-xs">
-        {data.hubspotPreview.slice(0, 2).map((p) => (
-          <div key={`${p.entity}-${p.toolName}`}>
-            <span className="font-medium text-gray-200">{String(p.entity)}</span>
-            <span className="ml-2 text-gray-500">{formatHubSpotPreviewForDisplay(p.preview, String(p.entity ?? ""))}</span>
-          </div>
-        ))}
-      </div>
     );
   }
 

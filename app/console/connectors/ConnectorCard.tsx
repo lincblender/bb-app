@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Info, Linkedin, History, Building2, Briefcase } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -24,6 +24,26 @@ interface ConnectorCardProps {
 
 export function ConnectorCard({ pillar, config, content, actions }: ConnectorCardProps) {
   const [infoOpen, setInfoOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!infoOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
+        setInfoOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [infoOpen]);
+
   const Icon = PILLAR_ICONS[pillar.id];
   const badge = getStatusBadge(pillar.status);
 
@@ -33,28 +53,34 @@ export function ConnectorCard({ pillar, config, content, actions }: ConnectorCar
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-bb-powder-blue/15 text-bb-powder-blue">
           <Icon size={18} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="relative flex items-center gap-2">
           <Badge variant={badge.variant}>{badge.label}</Badge>
           <button
+            ref={buttonRef}
             type="button"
             onClick={() => setInfoOpen((o) => !o)}
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-700/50 hover:text-gray-300"
             aria-label="More information"
+            aria-expanded={infoOpen}
           >
             <Info size={14} />
           </button>
+          {infoOpen && (
+            <div
+              ref={popoverRef}
+              role="tooltip"
+              className="absolute right-0 top-full z-50 mt-1.5 max-w-[260px] rounded-lg border border-gray-600 bg-bb-dark-elevated px-3 py-2.5 text-xs text-gray-300 shadow-xl"
+              style={{ bottom: "auto" }}
+            >
+              {config.info}
+            </div>
+          )}
         </div>
       </div>
 
       <h2 className="mt-3 text-lg font-semibold text-gray-100">{config.title}</h2>
 
       <p className="mt-2 line-clamp-2 text-sm text-gray-400">{pillar.detail}</p>
-
-      {infoOpen && (
-        <div className="mt-2 rounded-lg border border-gray-700/60 bg-bb-dark px-3 py-2 text-xs text-gray-500">
-          {config.info}
-        </div>
-      )}
 
       <ul className="mt-3 space-y-1 text-sm text-gray-300">
         {config.bullets.map((bullet, i) => (
