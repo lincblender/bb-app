@@ -91,8 +91,8 @@ export async function fetchAusTenderFeed(limit = 25) {
   const response = await fetch(AUSTENDER_RSS_URL, {
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-      Accept: "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8",
+        "Mozilla/5.0 (compatible; BidBlender/1.0; +https://bidblender.com)",
+      Accept: "application/rss+xml, application/xml, text/xml, */*",
       "Accept-Language": "en-AU,en;q=0.9",
       Referer: "https://www.tenders.gov.au/",
     },
@@ -101,12 +101,12 @@ export async function fetchAusTenderFeed(limit = 25) {
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "");
-    const looksLikeCloudFrontBlock =
-      /cloudfront|request blocked|request could not be satisfied/i.test(errorBody);
+    const looksLikeBlock =
+      /cloudfront|request blocked|request could not be satisfied|access denied/i.test(errorBody);
 
     throw new Error(
-      looksLikeCloudFrontBlock
-        ? `AusTender RSS is currently blocking this server request (HTTP ${response.status} from CloudFront).`
+      looksLikeBlock
+        ? "AusTender RSS is currently blocking this server request. Try again later."
         : `AusTender RSS request failed with status ${response.status}.`
     );
   }

@@ -26,16 +26,12 @@ function PillarActions({
   runPostAction,
   data,
   actions,
-  showLinkedInCompanySetup,
-  setShowLinkedInCompanySetup,
 }: {
   pillarId: string;
   loadingAction: string | null;
   runPostAction: (id: string, endpoint: string, fn: (b: Record<string, unknown>) => string) => Promise<void>;
   data: ReturnType<typeof useConnectorData>;
   actions: ReturnType<typeof useConnectorActions>;
-  showLinkedInCompanySetup: boolean;
-  setShowLinkedInCompanySetup: (v: boolean) => void;
 }) {
   const btn = "inline-flex items-center gap-2 rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:border-gray-500 hover:text-white disabled:opacity-60 disabled:hover:border-gray-600";
   const link = "inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-bb-coral";
@@ -63,10 +59,7 @@ function PillarActions({
           className={btn}
         >
           {loadingAction === "connect-linkedin-company-admin" ? <RefreshCw size={14} className="animate-spin" /> : <Linkedin size={14} />}
-          {data.linkedInCompanyAdminConnector?.status === "live" ? "Reconnect" : "Authorise company pages"}
-        </button>
-        <button type="button" onClick={() => setShowLinkedInCompanySetup(true)} className={link}>
-          Add credentials
+          {data.linkedInCompanyAdminConnector?.status === "live" ? "Reconnect" : "Connect LinkedIn Page"}
         </button>
         {data.linkedInCompanyAdminConnector?.status === "live" && (
           <button
@@ -113,11 +106,6 @@ function PillarActions({
           {loadingAction === "sync-hubspot" ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           Sync
         </button>
-        {data.hubspotConnector?.status === "live" && (
-          <Link href="/console/network" className={link}>
-            View in network <ArrowRight size={12} />
-          </Link>
-        )}
       </>
     );
   }
@@ -155,51 +143,10 @@ function PillarActions({
 function PillarContent({
   pillarId,
   data,
-  actions,
-  showLinkedInCompanySetup,
-  linkedInSetupError,
-  onShowLinkedInCompanySetup,
 }: {
   pillarId: string;
   data: ReturnType<typeof useConnectorData>;
-  actions: ReturnType<typeof useConnectorActions>;
-  showLinkedInCompanySetup: boolean;
-  linkedInSetupError: string | null;
-  onShowLinkedInCompanySetup: (v: boolean) => void;
 }) {
-  if (pillarId === "reach" && showLinkedInCompanySetup) {
-    return (
-      <form
-        onSubmit={actions.handleLinkedInCompanySetupSubmit}
-        className="space-y-3 rounded-xl border border-gray-700/70 bg-bb-dark px-3 py-3"
-      >
-        <p className="text-xs text-gray-400">
-          Create an app at{" "}
-          <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener noreferrer" className="text-bb-coral hover:underline">
-            developers.linkedin.com
-          </a>
-        </p>
-        <div>
-          <label className="block text-xs text-gray-500">Client ID</label>
-          <input name="linkedin_client_id" type="text" placeholder="Client ID" className="mt-1 w-full rounded border border-gray-600 bg-bb-dark-elevated px-2 py-1.5 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500">Client Secret</label>
-          <input name="linkedin_client_secret" type="password" placeholder="Client Secret" className="mt-1 w-full rounded border border-gray-600 bg-bb-dark-elevated px-2 py-1.5 text-sm" />
-        </div>
-        {linkedInSetupError && <p className="text-xs text-bb-orange">{linkedInSetupError}</p>}
-        <div className="flex gap-2">
-          <button type="submit" disabled={false} className="rounded bg-[#0a66c2] px-3 py-1.5 text-sm text-white">
-            Save and authorise
-          </button>
-          <button type="button" onClick={() => onShowLinkedInCompanySetup(false)} className="rounded border border-gray-600 px-3 py-1.5 text-sm">
-            Cancel
-          </button>
-        </div>
-      </form>
-    );
-  }
-
   if (pillarId === "history" && data.hubspotWarnings) {
     return <p className="text-xs text-bb-orange">{data.hubspotWarnings}</p>;
   }
@@ -214,21 +161,15 @@ function PillarContent({
 export default function ConnectorsPage() {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ tone: "positive" | "warning"; text: string } | null>(null);
-  const [showLinkedInCompanySetup, setShowLinkedInCompanySetup] = useState(false);
-  const [linkedInSetupError, setLinkedInSetupError] = useState<string | null>(null);
 
   const data = useConnectorData();
   const actions = useConnectorActions({
     setLoadingAction,
     setFeedback,
-    setShowLinkedInCompanySetup,
-    setLinkedInSetupError,
   });
 
   useConnectorFeedback({
     setFeedback,
-    setShowLinkedInCompanySetup,
-    setLinkedInSetupError,
     handleConnectLinkedIn: actions.handleConnectLinkedIn,
     handleConnectHubSpot: actions.handleConnectHubSpot,
     handleConnectLinkedInCompanyAdmin: actions.handleConnectLinkedInCompanyAdmin,
@@ -283,14 +224,7 @@ export default function ConnectorsPage() {
               pillar={pillar}
               config={config}
               content={
-                <PillarContent
-                  pillarId={pillar.id}
-                  data={data}
-                  actions={actions}
-                  showLinkedInCompanySetup={showLinkedInCompanySetup}
-                  linkedInSetupError={linkedInSetupError}
-                  onShowLinkedInCompanySetup={setShowLinkedInCompanySetup}
-                />
+                <PillarContent pillarId={pillar.id} data={data} />
               }
               actions={
                 <PillarActions
@@ -299,8 +233,6 @@ export default function ConnectorsPage() {
                   runPostAction={actions.runPostAction}
                   data={data}
                   actions={actions}
-                  showLinkedInCompanySetup={showLinkedInCompanySetup}
-                  setShowLinkedInCompanySetup={setShowLinkedInCompanySetup}
                 />
               }
             />
@@ -321,7 +253,7 @@ export default function ConnectorsPage() {
                   <p className="font-medium text-gray-100">{source.name}</p>
                   <p className="mt-1 text-sm text-gray-500">{source.description}</p>
                 </div>
-                <Badge variant={source.status === "available" ? "warning" : "neutral"}>
+                <Badge variant={source.status === "available" ? "warning" : "neutral"} className="whitespace-nowrap">
                   {source.status === "available" ? "Manual" : "Coming soon"}
                 </Badge>
               </div>

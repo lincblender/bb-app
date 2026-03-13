@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Info, Linkedin, History, Building2, Briefcase } from "lucide-react";
+import { Info, Linkedin, History, Building2, Briefcase, Check, X, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import type { SetupPillarStatus } from "@/lib/connectors/setup-status";
 import type { PillarDisplayConfig } from "./pillar-config";
 import { getStatusBadge } from "./utils";
+
+function StatusIcon({ status }: { status: SetupPillarStatus["status"] }) {
+  if (status === "ready") return <Check size={12} className="shrink-0 text-white" aria-hidden />;
+  if (status === "in-progress") return <Loader2 size={12} className="shrink-0 animate-spin text-white" aria-hidden />;
+  return <X size={12} className="shrink-0 text-gray-300" aria-hidden />;
+}
 
 const PILLAR_ICONS = {
   reach: Linkedin,
@@ -54,7 +60,10 @@ export function ConnectorCard({ pillar, config, content, actions }: ConnectorCar
           <Icon size={18} />
         </div>
         <div className="relative flex items-center gap-2">
-          <Badge variant={badge.variant}>{badge.label}</Badge>
+          <Badge variant={badge.variant} className="inline-flex items-center gap-1.5">
+            <StatusIcon status={pillar.status} />
+            {badge.label}
+          </Badge>
           <button
             ref={buttonRef}
             type="button"
@@ -80,7 +89,7 @@ export function ConnectorCard({ pillar, config, content, actions }: ConnectorCar
 
       <h2 className="mt-3 text-lg font-semibold text-gray-100">{config.title}</h2>
 
-      <p className="mt-2 line-clamp-2 text-sm text-gray-400">{pillar.detail}</p>
+      <p className="mt-2 text-sm text-gray-400">{pillar.detail}</p>
 
       <ul className="mt-3 space-y-1 text-sm text-gray-300">
         {config.bullets.map((bullet, i) => (

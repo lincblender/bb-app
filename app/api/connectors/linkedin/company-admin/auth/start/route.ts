@@ -30,13 +30,6 @@ function buildStartErrorRedirect(requestUrl: string, next: string, detail: strin
   return destination;
 }
 
-function buildSetupRedirect(requestUrl: string, next: string) {
-  const destination = new URL(next, requestUrl);
-  destination.searchParams.set("linkedin_admin", "setup");
-  destination.searchParams.set("detail", "Enter your LinkedIn app credentials to authorise company pages.");
-  return destination;
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const next = isSafeRelativePath(url.searchParams.get("next"))
@@ -65,7 +58,13 @@ export async function GET(request: Request) {
     try {
       credentials = resolveLinkedInClientCredentials(credentialsFromConfig);
     } catch {
-      return NextResponse.redirect(buildSetupRedirect(request.url, next));
+      return NextResponse.redirect(
+        buildStartErrorRedirect(
+          request.url,
+          next,
+          "LinkedIn app credentials are not configured. Contact your administrator."
+        )
+      );
     }
 
     const redirectUri = `${url.origin}/api/connectors/linkedin/company-admin/auth/callback`;

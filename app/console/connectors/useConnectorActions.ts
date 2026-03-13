@@ -15,22 +15,14 @@ export interface ConnectorActions {
   handleConnectLinkedIn: () => void;
   handleConnectHubSpot: () => void;
   handleConnectLinkedInCompanyAdmin: () => void;
-  handleLinkedInCompanySetupSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }
 
 export function useConnectorActions(options: {
   setLoadingAction: (id: string | null) => void;
   setFeedback: (feedback: { tone: "positive" | "warning"; text: string } | null) => void;
-  setShowLinkedInCompanySetup: (show: boolean) => void;
-  setLinkedInSetupError: (error: string | null) => void;
 }): ConnectorActions {
   const { refetch } = useWorkspaceData();
-  const {
-    setLoadingAction,
-    setFeedback,
-    setShowLinkedInCompanySetup,
-    setLinkedInSetupError,
-  } = options;
+  const { setLoadingAction, setFeedback } = options;
 
   const runPostAction = useCallback(
     async (
@@ -93,47 +85,10 @@ export function useConnectorActions(options: {
     }
   }, [setLoadingAction]);
 
-  const handleLinkedInCompanySetupSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const form = e.currentTarget;
-      const clientId = (form.elements.namedItem("linkedin_client_id") as HTMLInputElement)?.value?.trim();
-      const clientSecret = (form.elements.namedItem("linkedin_client_secret") as HTMLInputElement)?.value?.trim();
-      if (!clientId || !clientSecret) {
-        setLinkedInSetupError("Both Client ID and Client Secret are required.");
-        return;
-      }
-      setLoadingAction("linkedin-company-setup");
-      setLinkedInSetupError(null);
-      try {
-        const res = await fetch("/api/connectors/linkedin/company-admin/setup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
-        });
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) {
-          setLinkedInSetupError(data.error ?? "Setup failed.");
-          return;
-        }
-        setShowLinkedInCompanySetup(false);
-        window.location.assign(
-          `/api/connectors/linkedin/company-admin/auth/start?next=${REDIRECT_BASE}`
-        );
-      } catch {
-        setLinkedInSetupError("Setup failed. Please try again.");
-      } finally {
-        setLoadingAction(null);
-      }
-    },
-    [setLoadingAction, setLinkedInSetupError, setShowLinkedInCompanySetup]
-  );
-
   return {
     runPostAction,
     handleConnectLinkedIn,
     handleConnectHubSpot,
     handleConnectLinkedInCompanyAdmin,
-    handleLinkedInCompanySetupSubmit,
   };
 }

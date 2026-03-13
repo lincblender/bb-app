@@ -10,8 +10,6 @@ export interface ConnectorFeedback {
 
 export function useConnectorFeedback(options: {
   setFeedback: (feedback: ConnectorFeedback | null) => void;
-  setShowLinkedInCompanySetup: (show: boolean) => void;
-  setLinkedInSetupError: (error: string | null) => void;
   handleConnectLinkedIn: () => void;
   handleConnectHubSpot: () => void;
   handleConnectLinkedInCompanyAdmin: () => void;
@@ -25,8 +23,6 @@ export function useConnectorFeedback(options: {
   const searchParams = useSearchParams();
   const {
     setFeedback,
-    setShowLinkedInCompanySetup,
-    setLinkedInSetupError,
     handleConnectLinkedIn,
     handleConnectHubSpot,
     handleConnectLinkedInCompanyAdmin,
@@ -40,30 +36,25 @@ export function useConnectorFeedback(options: {
     const connectorStatus = hubspotStatus ?? linkedInAdminStatus;
     if (!connectorStatus) return;
 
-    if (linkedInAdminStatus === "setup") {
-      setShowLinkedInCompanySetup(true);
-      setLinkedInSetupError(null);
-    } else {
-      setFeedback({
-        tone: connectorStatus === "connected" ? "positive" : "warning",
-        text:
-          detail ??
-          (hubspotStatus
-            ? hubspotStatus === "connected"
-              ? "HubSpot connected."
-              : "HubSpot action failed."
-            : linkedInAdminStatus === "connected"
-              ? "LinkedIn company-page access connected."
-              : "LinkedIn company-page action failed."),
-      });
-    }
+    setFeedback({
+      tone: connectorStatus === "connected" ? "positive" : "warning",
+      text:
+        detail ??
+        (hubspotStatus
+          ? hubspotStatus === "connected"
+            ? "HubSpot connected."
+            : "HubSpot action failed."
+          : linkedInAdminStatus === "connected"
+            ? "LinkedIn company-page access connected."
+            : "LinkedIn company-page action failed."),
+    });
 
     const params = new URLSearchParams(searchParams.toString());
     params.delete("hubspot");
     params.delete("linkedin_admin");
     params.delete("detail");
     router.replace(params.toString() ? `/console/connectors?${params.toString()}` : "/console/connectors");
-  }, [router, searchParams, setFeedback, setShowLinkedInCompanySetup, setLinkedInSetupError]);
+  }, [router, searchParams, setFeedback]);
 
   const [actionHandled, setActionHandled] = useState<string | null>(null);
 
