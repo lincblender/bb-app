@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -179,6 +179,11 @@ export default function ConnectorsPage() {
   const futureSources = mcpLibrary.filter(
     (entry) => !["mcp-hubspot", "mcp-local-demo", "mcp-custom"].includes(entry.id)
   );
+  const additionalSourcesRef = useRef<HTMLDivElement>(null);
+
+  const handleAddConnector = (_pillarId: string) => {
+    additionalSourcesRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -235,12 +240,14 @@ export default function ConnectorsPage() {
                   actions={actions}
                 />
               }
+              onAddConnector={handleAddConnector}
             />
           );
         })}
       </div>
 
-      <Card className="mt-10">
+      <div ref={additionalSourcesRef}>
+        <Card className="mt-10">
         <h2 className="text-xl font-semibold text-gray-100">Additional MCP sources</h2>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-400">
           Once the four pillars are grounded, broader MCP sources can add supporting evidence.
@@ -261,6 +268,7 @@ export default function ConnectorsPage() {
           ))}
         </div>
       </Card>
+      </div>
     </div>
   );
 }

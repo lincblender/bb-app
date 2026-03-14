@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Info, Linkedin, History, Building2, Briefcase, Check, X, Loader2 } from "lucide-react";
+import { Info, Linkedin, History, Building2, Briefcase, Check, X, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import type { SetupPillarStatus } from "@/lib/connectors/setup-status";
@@ -26,9 +26,10 @@ interface ConnectorCardProps {
   config: PillarDisplayConfig;
   content?: React.ReactNode;
   actions: React.ReactNode;
+  onAddConnector?: (pillarId: string) => void;
 }
 
-export function ConnectorCard({ pillar, config, content, actions }: ConnectorCardProps) {
+export function ConnectorCard({ pillar, config, content, actions, onAddConnector }: ConnectorCardProps) {
   const [infoOpen, setInfoOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -104,6 +105,16 @@ export function ConnectorCard({ pillar, config, content, actions }: ConnectorCar
 
       <div className="mt-4 flex flex-col gap-2 border-t border-gray-700/50 pt-4">
         {actions}
+        {onAddConnector && (
+          <button
+            type="button"
+            onClick={() => onAddConnector(pillar.id)}
+            className="mt-2 flex h-8 w-8 shrink-0 items-center justify-center self-end rounded-lg text-gray-500 hover:bg-gray-700/50 hover:text-gray-300"
+            aria-label="Add connector"
+          >
+            <Plus size={16} />
+          </button>
+        )}
       </div>
     </Card>
   );
