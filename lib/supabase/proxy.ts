@@ -56,14 +56,12 @@ export async function updateSession(request: NextRequest) {
 
   // If logged in and on sign in/sign up page, redirect to console
   if (user && isPublicAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = await resolvePostAuthDestination(
+    const destination = await resolvePostAuthDestination(
       supabase,
       user,
       request.nextUrl.searchParams.get("next")
     );
-    url.search = "";
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(new URL(destination, request.url));
   }
 
   return supabaseResponse;

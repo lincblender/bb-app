@@ -62,7 +62,7 @@ export async function GET(request: Request) {
         }
 
         const destination = await resolvePostAuthDestination(supabase, user, next);
-        return NextResponse.redirect(`${origin}${destination}`);
+        return NextResponse.redirect(new URL(destination, request.url));
       }
     }
   }
