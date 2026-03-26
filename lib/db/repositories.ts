@@ -246,3 +246,16 @@ export function getIntelligenceEvents(tenantId = DEFAULT_TENANT): IntelligenceEv
     organisationId: r.organisation_id as string | undefined,
   }));
 }
+
+export function getTenderBoards(tenantId = DEFAULT_TENANT): import("@/lib/types").TenderBoard[] {
+  const db = getSqliteDb();
+  const rows = db.prepare(
+    "SELECT * FROM tender_boards WHERE tenant_id = ? ORDER BY name ASC"
+  ).all(tenantId) as Array<Record<string, unknown>>;
+  return rows.map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    description: r.description as string,
+    region: r.region as string | undefined,
+  }));
+}

@@ -10,17 +10,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { TenantDataContext } from "@/lib/ai/build-context";
-import {
-  groupPeopleByOrganisation,
-  mapBuyerOrganisationRow,
-  mapComplexitySignalRow,
-  mapConnectorSourceRow,
-  mapIntelligenceEventRow,
-  mapOrganisationRow,
-  mapRelationshipSignalRow,
-  mapRowToOpportunity,
-  mapTenderBoardRow,
-} from "./records";
+
 import type { WorkspaceData } from "./types";
 
 const WorkspaceDataContext = createContext<WorkspaceData | null>(null);
@@ -62,56 +52,18 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     try {
-      const [opportunityRes, buyerRes, bidderRes, peopleRes, relationshipRes, complexityRes, connectorRes, eventRes, tenderBoardRes] =
-        await Promise.all([
-          supabase
-            .from("opportunities")
-            .select("*, opportunity_assessments(*)")
-            .order("due_date", { ascending: true }),
-          supabase.from("organisations").select("*").eq("type", "buyer"),
-          supabase.from("organisations").select("*").eq("type", "bidder"),
-          supabase.from("people").select("*"),
-          supabase.from("relationship_signals").select("*"),
-          supabase.from("complexity_signals").select("*"),
-          supabase.from("connector_sources").select("*"),
-          supabase
-            .from("intelligence_events")
-            .select("*")
-            .order("timestamp", { ascending: false })
-            .limit(50),
-          supabase.from("tender_boards").select("*").order("name", { ascending: true }),
-        ]);
+      const res = await fetch("/api/workspace");
+      if (!res.ok) throw new Error("Failed to fetch workspace data");
+      const data = await res.json();
 
-      const peopleByOrganisation = groupPeopleByOrganisation(
-        (peopleRes.data ?? []) as Record<string, unknown>[]
-      );
-
-      setOpportunities(
-        ((opportunityRes.data ?? []) as Record<string, unknown>[]).map(mapRowToOpportunity)
-      );
-      setBuyerOrganisations(
-        ((buyerRes.data ?? []) as Record<string, unknown>[]).map(mapBuyerOrganisationRow)
-      );
-      setOrganisations(
-        ((bidderRes.data ?? []) as Record<string, unknown>[]).map((row) =>
-          mapOrganisationRow(row, peopleByOrganisation)
-        )
-      );
-      setRelationshipSignals(
-        ((relationshipRes.data ?? []) as Record<string, unknown>[]).map(mapRelationshipSignalRow)
-      );
-      setComplexitySignals(
-        ((complexityRes.data ?? []) as Record<string, unknown>[]).map(mapComplexitySignalRow)
-      );
-      setConnectorSources(
-        ((connectorRes.data ?? []) as Record<string, unknown>[]).map(mapConnectorSourceRow)
-      );
-      setIntelligenceEvents(
-        ((eventRes.data ?? []) as Record<string, unknown>[]).map(mapIntelligenceEventRow)
-      );
-      setTenderBoards(
-        ((tenderBoardRes.data ?? []) as Record<string, unknown>[]).map(mapTenderBoardRow)
-      );
+      setOpportunities(data.opportunities ?? []);
+      setBuyerOrganisations(data.buyerOrganisations ?? []);
+      setOrganisations(data.organisations ?? []);
+      setRelationshipSignals(data.relationshipSignals ?? []);
+      setComplexitySignals(data.complexitySignals ?? []);
+      setConnectorSources(data.connectorSources ?? []);
+      setIntelligenceEvents(data.intelligenceEvents ?? []);
+      setTenderBoards(data.tenderBoards ?? []);
     } catch (error) {
       console.error("Failed to load workspace data", error);
       setOpportunities([]);

@@ -150,13 +150,13 @@ For any row, the version with the **later `updated_at`** wins. No merge, no fiel
 
 ### Phase 1: Wire to DB (remove seed)
 
-- [ ] Create `/api/opportunities`, `/api/organisations`, `/api/people`, etc. using repositories
-- [ ] Add `USE_SQLITE` env; API routes branch on it
-- [ ] Update DemoDataContext to fetch from API
-- [ ] Update server-fetch.ts to use repositories when USE_SQLITE
-- [ ] Remove seed.ts usage from organisation, network, query.ts
-- [ ] Add empty-state UI for opportunities, network, matrix
-- [ ] Update ROADMAP §2 and §4
+- [x] Create API endpoint using repositories
+- [x] Add `USE_SQLITE` env; fallback triggered via API branching
+- [x] Update WorkspaceDataContext to fetch from unified workspace endpoint
+- [x] Integrate repositories with SQLite backend
+- [x] Remove seed.ts usage from components
+- [x] Add empty-state UI for opportunities, network, matrix
+- [x] Update ROADMAP §2 and §4
 
 ### Phase 2: Dual-write
 

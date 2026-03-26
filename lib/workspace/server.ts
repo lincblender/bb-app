@@ -10,6 +10,16 @@ import {
   mapRowToOpportunity,
   mapTenderBoardRow,
 } from "./records";
+import {
+  getOpportunities,
+  getBuyerOrganisations,
+  getOrganisations,
+  getRelationshipSignals,
+  getComplexitySignals,
+  getConnectorSources,
+  getIntelligenceEvents,
+  getTenderBoards
+} from "@/lib/db/repositories";
 
 export async function fetchCurrentTenantId(): Promise<string | null> {
   const supabase = await createClient();
@@ -42,6 +52,21 @@ export async function fetchWorkspaceData() {
 
   if (!user) {
     return null;
+  }
+
+  if (process.env.USE_SQLITE === "true") {
+    const tenantId = await fetchCurrentTenantId();
+    if (!tenantId) return null;
+    return {
+      opportunities: getOpportunities(tenantId),
+      buyerOrganisations: getBuyerOrganisations(tenantId),
+      organisations: getOrganisations(tenantId),
+      relationshipSignals: getRelationshipSignals(tenantId),
+      complexitySignals: getComplexitySignals(tenantId),
+      connectorSources: getConnectorSources(tenantId),
+      intelligenceEvents: getIntelligenceEvents(tenantId),
+      tenderBoards: getTenderBoards(tenantId),
+    };
   }
 
   const [opportunityRes, buyerRes, bidderRes, peopleRes, relationshipRes, complexityRes, connectorRes, eventRes, tenderBoardRes] =

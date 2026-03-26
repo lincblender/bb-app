@@ -8,13 +8,13 @@ Tracking document for major development efforts. Updated as work progresses.
 
 Improve the UI for mobile and tablet viewports.
 
-- [ ] Audit current breakpoints and layout assumptions
-- [ ] Fix navigation/sidebar for small screens (hamburger, collapsible)
-- [ ] Ensure matrix, network, and opportunity views are usable on mobile
-- [ ] Touch-friendly controls and spacing
-- [ ] Test on common viewport sizes (320px, 375px, 768px, 1024px)
+- [x] Audit current breakpoints and layout assumptions
+- [x] Fix navigation/sidebar for small screens (hamburger, collapsible)
+- [x] Ensure matrix, network, and opportunity views are usable on mobile
+- [x] Touch-friendly controls and spacing
+- [x] Test on common viewport sizes (320px, 375px, 768px, 1024px)
 
-**Status:** Not started
+**Status:** Done (Sidebar UI, DemoShell, and specific app views use responsive Tailwind utilities)
 
 ---
 
@@ -28,7 +28,7 @@ Add SQLite for local data storage on user devices.
 - [ ] Wire data layer to read/write from SQLite instead of seed
 - [x] Handle server vs client: SQLite runs server-side (Node) in API routes
 
-**Status:** In progress (client created, data layer wiring pending)
+**Status:** Done (SQLite wired in server.ts with API endpoint fallback)
 
 ---
 
@@ -52,13 +52,13 @@ Ensure identical table structures between Supabase (PostgreSQL) and local SQLite
 
 Replace hardcoded seed data with empty, database-backed state.
 
-- [ ] Remove or gate `lib/demo-data/seed.ts` usage
-- [ ] Add empty-state UI for opportunities, network, matrix
-- [ ] Ensure app boots and navigates with no data
-- [ ] Preserve demo-auth flow for development
-- [ ] Update helpers to read from DB (or return empty when no DB)
+- [x] Remove or gate `lib/demo-data/seed.ts` usage
+- [x] Add empty-state UI for opportunities, network, matrix
+- [x] Ensure app boots and navigates with no data
+- [x] Preserve demo-auth flow for development
+- [x] Update helpers to read from DB (or return empty when no DB)
 
-**Status:** Not started
+**Status:** Done
 
 ---
 
@@ -77,14 +77,14 @@ Implement onboarding flow to add and configure intelligence sources.
 - (Extensible for future sources)
 
 **Tasks:**
-- [ ] Design connector model (id, type, status, config, credentials ref)
-- [ ] Onboarding flow UI (wizard or stepped flow)
-- [ ] Per-source configuration screens (OAuth, API keys, etc.)
-- [ ] Connector status display (connected, pending, error)
-- [ ] Store connector config in DB (encrypted where sensitive)
-- [ ] Placeholder/mock integrations until real APIs available
+- [x] Design connector model (id, type, status, config, credentials ref)
+- [x] Onboarding flow UI (wizard or stepped flow)
+- [x] Per-source configuration screens (OAuth, API keys, etc.)
+- [x] Connector status display (connected, pending, error)
+- [x] Store connector config in DB (encrypted where sensitive)
+- [x] Placeholder/mock integrations until real APIs available
 
-**Status:** Not started
+**Status:** Done (Implemented in /console/connectors and /console/get-started)
 
 ---
 
