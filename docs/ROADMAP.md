@@ -93,12 +93,12 @@ Implement onboarding flow to add and configure intelligence sources.
 Implement and enhance Supabase Edge Functions for AI analysis.
 
 - [x] `run-analysis-job` – core analysis job (exists)
-- [ ] Deploy and test `run-analysis-job` against live Supabase
+- [x] Deploy and test `run-analysis-job` against live Supabase
 - [ ] Add any additional edge functions (e.g. chat summarisation, document ingestion)
-- [ ] Wire Next.js API routes to call Supabase Edge Functions when Supabase is configured
+- [x] Wire Next.js API routes to call Supabase Edge Functions when Supabase is configured
 - [ ] Error handling, retries, rate limiting
 
-**Status:** Partially done (run-analysis-job exists; deployment/testing pending)
+**Status:** Core edge logic deployed and fully wired. Client seamlessly routes dependent on SQLite config.
 
 **Apply Supabase migrations:**
 ```bash

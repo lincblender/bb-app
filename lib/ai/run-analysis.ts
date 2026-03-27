@@ -4,6 +4,7 @@
  */
 
 import OpenAI from "openai";
+import { createClient } from "@/lib/supabase/server";
 import {
   type AnalysisJobRequest,
   type AIAnalysisResponse,
@@ -237,23 +238,40 @@ export interface RunAnalysisOptions {
 }
 
 /**
- * Run an AI analysis job. Calls OpenAI and returns the validated response.
+ * Run an AI analysis job. Calls OpenAI or routes to Supabase Edge Function.
  * Throws on missing API key, OpenAI errors, or invalid response.
  */
 export async function runAnalysisJob(
   request: Omit<AnalysisJobRequest, "paradigm"> & { paradigm?: Paradigm },
   options?: RunAnalysisOptions
 ): Promise<AIAnalysisResponse> {
-  const apiKey = options?.apiKey ?? process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not set");
-  }
-
   const paradigm = request.paradigm ?? ANALYSIS_TO_PARADIGM[request.analysis_type];
   const req: AnalysisJobRequest = {
     ...request,
     paradigm,
   };
+
+  // Route to Supabase Edge Function if configured for remote mode
+  if (process.env.USE_SQLITE !== "true") {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase.functions.invoke("run-analysis-job", {
+        body: req,
+      });
+      if (error) {
+        throw error;
+      }
+      return data as AIAnalysisResponse;
+    } catch (err) {
+      console.error("Supabase Edge Function 'run-analysis-job' failed. Falling back to local execution:", err);
+      // Fallback to local execution below seamlessly
+    }
+  }
+
+  const apiKey = options?.apiKey ?? process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not set");
+  }
 
   const openai = new OpenAI({ apiKey });
   const modelId = MODEL_BY_PROFILE[req.model_profile] ?? MODEL_BY_PROFILE.balanced;
