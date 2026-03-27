@@ -5,7 +5,7 @@ interface WorkspaceLookupResult {
   blocks: AgentResponseBlock[];
 }
 
-function extractOpportunitySearchQuery(message: string): string | null {
+function extractOpportunitySearchQuery(message: string): { query: string, explicit: boolean } | null {
   const trimmed = message.trim();
   const lower = trimmed.toLowerCase();
   const prefixes = [
@@ -16,7 +16,8 @@ function extractOpportunitySearchQuery(message: string): string | null {
   for (const pattern of prefixes) {
     const match = trimmed.match(pattern);
     if (match) {
-      return trimmed.slice(match[0].length).trim() || null;
+      const q = trimmed.slice(match[0].length).trim();
+      return q ? { query: q, explicit: true } : null;
     }
   }
 
@@ -26,7 +27,7 @@ function extractOpportunitySearchQuery(message: string): string | null {
     !/[?!]/.test(trimmed) &&
     lower.split(/\s+/).length <= 8
   ) {
-    return trimmed;
+    return { query: trimmed, explicit: false };
   }
 
   return null;
@@ -87,6 +88,18 @@ export function resolveWorkspaceOpportunityLookup(
   hasOpportunityContext = false
 ): WorkspaceLookupResult | null {
   if (hasOpportunityContext || !data?.opportunities.length) {
+    // If they explicitly search but have no opps loaded, still trap it if explicit
+    const x = extractOpportunitySearchQuery(message);
+    if (x?.explicit && !hasOpportunityContext) {
+       return {
+         blocks: [
+           {
+             type: "text",
+             content: `I couldn't find any mapped opportunities for "**${x.query}**". Your workspace might be empty or missing connectors.`,
+           }
+         ]
+       };
+    }
     return null;
   }
 
@@ -131,10 +144,12 @@ export function resolveWorkspaceOpportunityLookup(
     };
   }
 
-  const query = extractOpportunitySearchQuery(message);
-  if (!query) {
+  const parsed = extractOpportunitySearchQuery(message);
+  if (!parsed) {
     return null;
   }
+  
+  const { query, explicit } = parsed;
 
   const exactMatch = findOpportunityByTitleMatch(data, query);
   if (exactMatch) {
@@ -162,6 +177,16 @@ export function resolveWorkspaceOpportunityLookup(
 
   const matches = searchOpportunities(data, query);
   if (matches.length === 0) {
+    if (explicit) {
+      return {
+        blocks: [
+          {
+            type: "text",
+            content: `I searched your workspace for "**${query}**" but couldn't find any matches. You may need to activate more connector sources or adjust your search.`,
+          }
+        ]
+      };
+    }
     return null;
   }
 
