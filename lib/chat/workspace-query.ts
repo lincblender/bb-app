@@ -90,6 +90,47 @@ export function resolveWorkspaceOpportunityLookup(
     return null;
   }
 
+  const lowerMessage = message.toLowerCase().trim();
+  const isGenericDiscovery =
+    lowerMessage.includes("latest matching bids") ||
+    lowerMessage.includes("what's new") ||
+    lowerMessage.includes("missing any opportunities") ||
+    (lowerMessage.includes("show me") && lowerMessage.length < 15) ||
+    (lowerMessage.includes("find") && lowerMessage.length < 15);
+
+  if (isGenericDiscovery) {
+    const items = data.opportunities
+      .slice(0, 3)
+      .map((o) => ({
+        id: o.id,
+        title: o.title,
+        issuer: getBuyerName(data, o.issuingOrganisationId),
+        fit: Math.round(
+          ((o.assessment?.technicalFit ?? 0) + (o.assessment?.networkStrength ?? 0)) / 2
+        ),
+      }));
+
+    return {
+      blocks: [
+        {
+          type: "text",
+          content: `I found ${items.length} opportunities in your workspace that might be relevant.`,
+        },
+        {
+          type: "opportunities",
+          content: "",
+          opportunities: items,
+        },
+        {
+          type: "cta",
+          content: "You can open an opportunity or break these apart into separate focused chats.",
+          ctaText: "Break apart into separate chats",
+          ctaAction: "breakapart",
+        },
+      ],
+    };
+  }
+
   const query = extractOpportunitySearchQuery(message);
   if (!query) {
     return null;
@@ -161,3 +202,4 @@ export function resolveWorkspaceOpportunityLookup(
     ],
   };
 }
+

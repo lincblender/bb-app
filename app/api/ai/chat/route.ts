@@ -50,57 +50,22 @@ export async function POST(request: Request) {
       fetchCurrentTenantId(),
       fetchWorkspaceData(),
     ]);
+
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: "Unauthorized: Tenant ID missing", blocks: null },
+        { status: 401 }
+      );
+    }
     const opp = primaryOppId && tenantData
       ? tenantData.opportunities.find((o) => o.id === primaryOppId)
       : null;
 
     const lowerMessage = message.toLowerCase().trim();
-    const isDiscovery = 
-      lowerMessage.includes("latest matching bids") ||
-      lowerMessage.includes("show me") ||
-      lowerMessage.includes("find") ||
-      lowerMessage.includes("what's new") ||
-      lowerMessage.includes("missing any opportunities");
 
-    if (isDiscovery && !primaryOppId && attachments.length === 0) {
-      const allOpps = tenantData?.opportunities ?? [];
-      const items = allOpps
-        .slice(0, 3)
-        .map(o => {
-          const fit = (o as any).assessment?.technicalFit ?? Math.floor(Math.random() * 30 + 70);
-          const comp = Math.floor(Math.random() * 40 + 20);
-          const issuerName = o.issuingOrganisationId.replace('org-', '').replace(/-/g, ' ').toUpperCase();
-          return {
-            id: o.id,
-            title: o.title,
-            issuer: issuerName.length > 3 ? issuerName : "GOVERNMENT DEPT",
-            fit,
-            competitivePct: comp
-          };
-        });
-
-      return NextResponse.json({
-        blocks: [
-          {
-            type: "text",
-            content: `I found ${items.length} opportunities in your workspace that match your profile.`,
-          },
-          {
-            type: "opportunities",
-            opportunities: items,
-          },
-          {
-            type: "cta",
-            content: "You can open an opportunity or break these apart into separate focused chats.",
-            ctaText: "Break apart into separate chats",
-            ctaAction: "breakapart"
-          }
-        ]
-      });
-    }
 
     const { analysis_type, inputs } = createChatAnalysisRequest(message, {
-      tenantId: tenantId ?? "unknown-tenant",
+      tenantId: tenantId,
       opportunityId: primaryOppId,
       companyProfile: buildCompanyProfile(tenantData),
       networkContext: opp
@@ -139,7 +104,7 @@ export async function POST(request: Request) {
 
     const response = await runAnalysisJob({
       job_id: crypto.randomUUID(),
-      tenant_id: tenantId ?? "unknown-tenant",
+      tenant_id: tenantId,
       opportunity_id: primaryOppId,
       analysis_type,
       model_profile: "balanced",

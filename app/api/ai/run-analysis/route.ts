@@ -18,8 +18,11 @@ export async function POST(request: Request) {
 
     const jobId =
       typeof body.job_id === "string" ? body.job_id : crypto.randomUUID();
-    const tenantId =
-      typeof body.tenant_id === "string" ? body.tenant_id : resolvedTenantId ?? "unknown-tenant";
+    const tenantId = typeof body.tenant_id === "string" ? body.tenant_id : resolvedTenantId;
+
+    if (!tenantId) {
+      return NextResponse.json({ error: "Unauthorized: Tenant ID missing" }, { status: 401 });
+    }
     const analysisType = (body.analysis_type ?? "RECOMMEND_BID_DECISION") as AnalysisType;
     const paradigm = body.paradigm ?? ANALYSIS_TO_PARADIGM[analysisType];
     const modelProfile = body.model_profile ?? "balanced";
