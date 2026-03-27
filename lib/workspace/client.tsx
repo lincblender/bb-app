@@ -56,6 +56,12 @@ export function WorkspaceDataProvider({ children }: { children: ReactNode }) {
       if (!res.ok) throw new Error("Failed to fetch workspace data");
       const data = await res.json();
 
+      // Trigger bidirectional background sync on app load 
+      // Fire and forget to avoid delaying render
+      fetch("/api/sync", { method: "POST" }).catch((err) =>
+        console.warn("Background sync failed", err)
+      );
+
       setOpportunities(data.opportunities ?? []);
       setBuyerOrganisations(data.buyerOrganisations ?? []);
       setOrganisations(data.organisations ?? []);

@@ -120,7 +120,7 @@ For any row, the version with the **later `updated_at`** wins. No merge, no fiel
 |------|----------|
 | Same `updated_at` | Keep Supabase version (arbitrary; rare). |
 | Row in A, not in B | Insert into B. |
-| Row deleted in A | Delete from B. (Requires delete tracking—see §3.6 above.) |
+| Row deleted in A | Delete from B. (Requires delete tracking—see §3.6 above.) **Status (v1):** We accept v1 gaps for true row deletions (hard deletes). Tombstones or a `deleted_at` column will be implemented in Phase 4 if required. |
 | Clock skew | Use server timestamps where possible. Client timestamps are best-effort. |
 
 ### User messaging
@@ -167,11 +167,11 @@ For any row, the version with the **later `updated_at`** wins. No merge, no fiel
 
 ### Phase 3: Sync
 
-- [ ] Implement sync job: pull Supabase → SQLite, push SQLite → Supabase
-- [ ] Last-edit-wins per row using updated_at
-- [ ] Trigger sync on app load and after writes
-- [ ] Handle intelligence_events (append-only)
-- [ ] Document delete sync strategy (tombstones or accept v1 gaps)
+- [x] Implement sync job: pull Supabase → SQLite, push SQLite → Supabase
+- [x] Last-edit-wins per row using updated_at
+- [x] Trigger sync on app load and after writes
+- [x] Handle intelligence_events (append-only)
+- [x] Document delete sync strategy (tombstones or accept v1 gaps)
 
 ### Phase 4: Client offline (future)
 
