@@ -160,10 +160,10 @@ For any row, the version with the **later `updated_at`** wins. No merge, no fiel
 
 ### Phase 2: Dual-write
 
-- [ ] Create DataLayer (or sync service) with writeOpportunity, writeOrganisation, etc.
-- [ ] Dual-write: Supabase + SQLite on every write
-- [ ] Read fallback: Supabase → SQLite on failure
-- [ ] Add write methods to repositories (currently read-only for most)
+- [x] Create DataLayer (or sync service) with writeOpportunity, writeOrganisation, etc.
+- [x] Dual-write: Supabase + SQLite on every write
+- [x] Read fallback: Supabase → SQLite on failure
+- [x] Add write methods to repositories (currently read-only for most)
 
 ### Phase 3: Sync
 

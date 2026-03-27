@@ -259,3 +259,80 @@ export function getTenderBoards(tenantId = DEFAULT_TENANT): import("@/lib/types"
     region: r.region as string | undefined,
   }));
 }
+
+export function upsertOpportunity(opportunity: Opportunity & { assessment?: FitAssessment }, tenantId = DEFAULT_TENANT) {
+  const db = getSqliteDb();
+  ensureTenant(db);
+  
+  db.prepare(`
+    INSERT OR REPLACE INTO opportunities (
+      id, tenant_id, issuing_organisation_id, title, category, due_date, summary, status, source_id, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+  `).run(
+    opportunity.id,
+    tenantId,
+    opportunity.issuingOrganisationId,
+    opportunity.title,
+    opportunity.category,
+    opportunity.dueDate || null,
+    opportunity.summary,
+    opportunity.status || "reviewing",
+    opportunity.sourceId || null
+  );
+
+  if (opportunity.assessment) {
+    db.prepare(`
+      INSERT OR REPLACE INTO opportunity_assessments (
+        opportunity_id, technical_fit, network_strength, organisational_complexity, recommendation, strategy_posture, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    `).run(
+      opportunity.id,
+      opportunity.assessment.technicalFit ?? 0,
+      opportunity.assessment.networkStrength ?? 0,
+      opportunity.assessment.organisationalComplexity ?? 0,
+      opportunity.assessment.recommendation ?? "low-priority",
+      opportunity.assessment.strategyPosture ?? "monitor-only"
+    );
+  }
+}
+
+export function upsertOrganisation(org: Organisation | BuyerOrganisation, tenantId = DEFAULT_TENANT) {
+  const db = getSqliteDb();
+  ensureTenant(db);
+  
+  const type = "capabilities" in org ? "bidder" : "buyer";
+
+  db.prepare(`
+    INSERT OR REPLACE INTO organisations (
+      id, tenant_id, type, name, description, website_url, linkedin_url, logo_url, location,
+      parent_id, subsidiaries, acquisition_history, board_complexity, scale,
+      social_profiles, capabilities, sectors, certifications, individual_qualifications, case_studies,
+      strategic_preferences, target_markets, partner_gaps, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+  `).run(
+    org.id,
+    tenantId,
+    type,
+    org.name,
+    org.description || "",
+    (org as Organisation).websiteUrl || null,
+    (org as Organisation).linkedinUrl || null,
+    (org as Organisation).logoUrl || null,
+    (org as Organisation).location || null,
+    (org as BuyerOrganisation).parentId || null,
+    JSON.stringify((org as BuyerOrganisation).subsidiaries || []),
+    JSON.stringify((org as BuyerOrganisation).acquisitionHistory || []),
+    (org as BuyerOrganisation).boardComplexity || null,
+    (org as BuyerOrganisation).scale || null,
+    JSON.stringify((org as Organisation).socialProfiles || []),
+    JSON.stringify((org as Organisation).capabilities || []),
+    JSON.stringify((org as Organisation).sectors || []),
+    JSON.stringify((org as Organisation).certifications || []),
+    JSON.stringify((org as Organisation).individualQualifications || []),
+    JSON.stringify((org as Organisation).caseStudies || []),
+    JSON.stringify((org as Organisation).strategicPreferences || []),
+    JSON.stringify((org as Organisation).targetMarkets || []),
+    JSON.stringify((org as Organisation).partnerGaps || [])
+  );
+}
+

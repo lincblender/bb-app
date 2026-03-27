@@ -1,25 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import {
-  groupPeopleByOrganisation,
-  mapBuyerOrganisationRow,
-  mapComplexitySignalRow,
-  mapConnectorSourceRow,
-  mapIntelligenceEventRow,
-  mapOrganisationRow,
-  mapRelationshipSignalRow,
-  mapRowToOpportunity,
-  mapTenderBoardRow,
-} from "./records";
-import {
-  getOpportunities,
-  getBuyerOrganisations,
-  getOrganisations,
-  getRelationshipSignals,
-  getComplexitySignals,
-  getConnectorSources,
-  getIntelligenceEvents,
-  getTenderBoards
-} from "@/lib/db/repositories";
 
 export async function fetchCurrentTenantId(): Promise<string | null> {
   const supabase = await createClient();
@@ -54,65 +33,11 @@ export async function fetchWorkspaceData() {
     return null;
   }
 
-  if (process.env.USE_SQLITE === "true") {
-    const tenantId = await fetchCurrentTenantId();
-    if (!tenantId) return null;
-    return {
-      opportunities: getOpportunities(tenantId),
-      buyerOrganisations: getBuyerOrganisations(tenantId),
-      organisations: getOrganisations(tenantId),
-      relationshipSignals: getRelationshipSignals(tenantId),
-      complexitySignals: getComplexitySignals(tenantId),
-      connectorSources: getConnectorSources(tenantId),
-      intelligenceEvents: getIntelligenceEvents(tenantId),
-      tenderBoards: getTenderBoards(tenantId),
-    };
+  const tenantId = await fetchCurrentTenantId();
+  if (!tenantId) {
+    return null;
   }
 
-  const [opportunityRes, buyerRes, bidderRes, peopleRes, relationshipRes, complexityRes, connectorRes, eventRes, tenderBoardRes] =
-    await Promise.all([
-      supabase
-        .from("opportunities")
-        .select("*, opportunity_assessments(*)")
-        .order("due_date", { ascending: true }),
-      supabase.from("organisations").select("*").eq("type", "buyer"),
-      supabase.from("organisations").select("*").eq("type", "bidder"),
-      supabase.from("people").select("*"),
-      supabase.from("relationship_signals").select("*"),
-      supabase.from("complexity_signals").select("*"),
-      supabase.from("connector_sources").select("*"),
-      supabase
-        .from("intelligence_events")
-        .select("*")
-        .order("timestamp", { ascending: false })
-        .limit(50),
-      supabase.from("tender_boards").select("*").order("name", { ascending: true }),
-    ]);
-
-  const peopleByOrganisation = groupPeopleByOrganisation(
-    (peopleRes.data ?? []) as Record<string, unknown>[]
-  );
-
-  return {
-    opportunities: ((opportunityRes.data ?? []) as Record<string, unknown>[]).map(mapRowToOpportunity),
-    buyerOrganisations: ((buyerRes.data ?? []) as Record<string, unknown>[]).map(mapBuyerOrganisationRow),
-    organisations: ((bidderRes.data ?? []) as Record<string, unknown>[]).map((row) =>
-      mapOrganisationRow(row, peopleByOrganisation)
-    ),
-    relationshipSignals: ((relationshipRes.data ?? []) as Record<string, unknown>[]).map(
-      mapRelationshipSignalRow
-    ),
-    complexitySignals: ((complexityRes.data ?? []) as Record<string, unknown>[]).map(
-      mapComplexitySignalRow
-    ),
-    connectorSources: ((connectorRes.data ?? []) as Record<string, unknown>[]).map(
-      mapConnectorSourceRow
-    ),
-    intelligenceEvents: ((eventRes.data ?? []) as Record<string, unknown>[]).map(
-      mapIntelligenceEventRow
-    ),
-    tenderBoards: ((tenderBoardRes.data ?? []) as Record<string, unknown>[]).map(
-      mapTenderBoardRow
-    ),
-  };
+  const { fetchWorkspaceData: dataLayerFetch } = await import("@/lib/db/data-layer");
+  return dataLayerFetch(tenantId);
 }
