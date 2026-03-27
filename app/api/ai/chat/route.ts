@@ -63,7 +63,38 @@ export async function POST(request: Request) {
 
     const lowerMessage = message.toLowerCase().trim();
 
+    const readyAttachments = attachments.filter(
+      (attachment) => attachment.extractionStatus === "ready" && attachment.extractedText
+    );
+    
+    const failedAttachments = attachments.filter(
+      (attachment) => attachment.extractionStatus && attachment.extractionStatus !== "ready"
+    );
 
+    const {
+      buildOpportunityComparisonSet,
+      buildCompanyProfile,
+      buildNetworkContextForBuyer,
+      buildOpportunitySummary,
+      buildWorkspaceKnowledgeContext,
+    } = await import("@/lib/ai/build-context");
+    
+    // 1. Try Deterministic Workspace Lookup first
+    const { resolveWorkspaceOpportunityLookup } = await import("@/lib/chat/workspace-query");
+    const lookupResult = resolveWorkspaceOpportunityLookup(message, tenantData, primaryOppId !== null);
+    
+    if (lookupResult) {
+      if (readyAttachments.length > 0) {
+        const analysedNames = readyAttachments.map((attachment) => attachment.name).join(", ");
+        lookupResult.blocks.unshift({
+          type: "text",
+          content: `I noticed you uploaded **${analysedNames}**, but I handled your search request first.`,
+        });
+      }
+      return NextResponse.json({ blocks: lookupResult.blocks });
+    }
+
+    // 2. Otherwise run deep AI intent and Analysis
     const { analysis_type, inputs } = createChatAnalysisRequest(message, {
       tenantId: tenantId,
       opportunityId: primaryOppId,
@@ -78,9 +109,6 @@ export async function POST(request: Request) {
       comparisonSet: buildOpportunityComparisonSet(tenantData, primaryOppId),
     });
 
-    const readyAttachments = attachments.filter(
-      (attachment) => attachment.extractionStatus === "ready" && attachment.extractedText
-    );
     if (readyAttachments.length > 0) {
       inputs.documents = readyAttachments.map((attachment, index) => ({
         id: `attachment-${index + 1}`,
@@ -89,9 +117,6 @@ export async function POST(request: Request) {
       }));
     }
 
-    const failedAttachments = attachments.filter(
-      (attachment) => attachment.extractionStatus && attachment.extractionStatus !== "ready"
-    );
     if (failedAttachments.length > 0) {
       const attachmentNotes = failedAttachments
         .map(
