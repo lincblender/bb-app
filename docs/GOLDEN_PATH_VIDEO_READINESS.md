@@ -28,13 +28,10 @@ A user signs up with LinkedIn and lands in a deliberate first-run experience tha
 - The dashboard route is not a purposeful onboarding destination.
 
 ### Required fixes
-- Add shared post-auth destination logic based on real tenant state.
-- Route first-run users to a dedicated `/console/get-started` page.
-- Preserve explicit `next` destinations for non-default flows.
-- Make the get-started page point directly to:
-  - connectors / LinkedIn status
-  - opportunity discovery
-  - document review
+- [DONE] Shared post-auth destination logic based on real tenant state.
+- [DONE] Route first-run users to a dedicated `/console/get-started` page.
+- [DONE] Preserve explicit `next` destinations for non-default flows.
+- [DONE] Make the get-started page point directly to connectors / opp discovery / doc review core workflows.
 
 ### Definition of done
 - New user with no chats and no opportunities lands on `/console/get-started`.
@@ -52,10 +49,10 @@ A user can find the right opportunity quickly, select it deterministically, and 
 - The explorer is functional but not the authoritative resolver for simple opportunity lookup.
 
 ### Required fixes
-- Route discovery / search / "show me" prompts through deterministic local handling.
-- Keep AI for analysis after an opportunity is in context.
-- Ensure selecting an opportunity updates chat tags and the detail panel consistently.
-- Keep the no-opportunity detail panel searchable and useful.
+- [DONE] Route discovery / search / "show me" prompts through deterministic local handling.
+- [DONE] Keep AI for analysis after an opportunity is in context.
+- [DONE] Ensure selecting an opportunity updates chat tags and the detail panel consistently.
+- [DONE] Keep the no-opportunity detail panel searchable and useful.
 
 ### Definition of done
 - Queries like `latest matching bids`, `show me X`, `find X`, and similar resolve from tenant data first.
@@ -73,10 +70,10 @@ A user uploads a supported document, sees clear extraction state, and gets an an
 - AI request metadata still uses demo defaults.
 
 ### Required fixes
-- Remove unsupported legacy `.doc` from accepted upload types.
-- Stamp AI requests with the real tenant ID.
-- Prepend a deterministic acknowledgement of which documents were actually analysed.
-- Keep hard guardrails when extraction or analysis is unavailable.
+- [DONE] Remove unsupported legacy `.doc` from accepted upload types.
+- [DONE] Stamp AI requests with the real tenant ID.
+- [DONE] Prepend a deterministic acknowledgement of which documents were actually analysed.
+- [DONE] Keep hard guardrails when extraction or analysis is unavailable.
 
 ### Definition of done
 - Only supported extractable formats are invited in the upload control.
@@ -85,10 +82,10 @@ A user uploads a supported document, sees clear extraction state, and gets an an
 
 ## Implementation order
 
-1. Post-auth routing and first-run page
-2. Deterministic opportunity discovery routing
-3. Document analysis truthfulness and supported-format cleanup
-4. Verification pass across all three flows
+- [DONE] 1. Post-auth routing and first-run page
+- [DONE] 2. Deterministic opportunity discovery routing
+- [DONE] 3. Document analysis truthfulness and supported-format cleanup
+- [DONE] 4. Verification pass across all three flows
 
 ## Verification checklist
 
