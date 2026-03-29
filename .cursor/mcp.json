@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "bidblender-model-router": {
+      "command": "npx",
+      "args": ["tsx", "packages/mcp-model-router/src/index.ts"],
+      "env": {}
+    }
+  }
+}
