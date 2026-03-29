@@ -10,7 +10,9 @@
     "video:install-browser": "playwright install chromium",
     "video:list": "tsx scripts/video/list-flows.ts",
     "video:record": "tsx scripts/video/record-golden-path.ts",
-    "video:record:auto": "tsx scripts/video/record-golden-path.ts --mode auto"
+    "video:record:auto": "tsx scripts/video/record-golden-path.ts --mode auto",
+    "models:evaluate": "tsx scripts/evaluate-models.ts",
+    "models:status": "tsx scripts/evaluate-models.ts --status"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

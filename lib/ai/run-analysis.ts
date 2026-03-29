@@ -258,8 +258,8 @@ export async function runAnalysisJob(
   });
 
   console.log(
-    `[model-router] Selected ${selection.displayName} (${selection.modelId}) ` +
-    `for ${req.paradigm} / ${req.model_profile}` +
+    `[model-router] Selected ${selection.modelId} ` +
+    `(source: ${selection.source}) for ${req.paradigm} / ${req.model_profile}` +
     (selection.reasoningEffort ? ` [reasoning: ${selection.reasoningEffort}]` : "")
   );
 

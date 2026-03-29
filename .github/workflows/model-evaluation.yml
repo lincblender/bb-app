@@ -1,0 +1,106 @@
+name: Model Evaluation
+
+on:
+  # Every 2 weeks (Monday 00:00 UTC)
+  schedule:
+    - cron: "0 0 * * 1/14"
+
+  # Detect new models: run after any OpenAI model changelog
+  repository_dispatch:
+    types: [openai-new-models]
+
+  # Manually trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Trigger reason"
+        required: false
+        default: "manual"
+        type: choice
+        options:
+          - manual
+          - new_models
+          - new_functionality
+          - scheduled
+
+  # Also run when new BidBlender functionality is added
+  push:
+    branches: [main]
+    paths:
+      - "lib/ai/constants.ts"   # new paradigm or analysis type
+      - "lib/ai/types.ts"       # new AnalysisType or Paradigm enum value
+      - "packages/mcp-model-router/src/discover.ts"  # updated task definitions
+
+jobs:
+  evaluate:
+    name: Discover & Allocate Models
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install MCP router dependencies
+        run: npm ci
+        working-directory: packages/mcp-model-router
+
+      - name: Run model evaluation
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          TRIGGER="${{ github.event.inputs.reason || 'scheduled' }}"
+          npx tsx scripts/evaluate-models.ts --${TRIGGER}
+
+      - name: Check for manifest changes
+        id: diff
+        run: |
+          if git diff --quiet lib/ai/model-manifest.json packages/mcp-model-router/manifest.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit updated manifests
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add lib/ai/model-manifest.json packages/mcp-model-router/manifest.json
+          git commit -m "chore(ai): auto-update model allocation manifest [skip ci]
+
+          Trigger: ${{ github.event.inputs.reason || 'scheduled' }}
+          Run: ${{ github.run_id }}"
+          git push
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Model Evaluation Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f packages/mcp-model-router/manifest.json ]; then
+            node -e "
+              const m = JSON.parse(require('fs').readFileSync('packages/mcp-model-router/manifest.json'));
+              console.log('**Generated:**', m.generatedAt);
+              console.log('**Next evaluation:**', m.nextEvaluationAt);
+              console.log('**Chat models available:**', m.summary.chatModelsAvailable);
+              console.log('**Allocated models:**', m.summary.allocatedModels.join(', '));
+              console.log('**Est. monthly cost (10k jobs):** \$' + m.summary.estimatedMonthlyCostAt10kJobs);
+              console.log('');
+              console.log('| Task | Model | \$/1k tokens |');
+              console.log('|------|-------|-------------|');
+              for (const [k, v] of Object.entries(m.allocations)) {
+                console.log(\`| \${k} | \${v.allocatedModel} | \$\${v.estimatedCostPer1kTokens.toFixed(5)} |\`);
+              }
+            " >> $GITHUB_STEP_SUMMARY
+          fi

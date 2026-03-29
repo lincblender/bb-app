@@ -1,0 +1,142 @@
+#!/usr/bin/env node
+/**
+ * scripts/evaluate-models.ts
+ *
+ * Run this to discover available OpenAI models, score them against
+ * BidBlender tasks, and write a model allocation manifest to:
+ *   packages/mcp-model-router/manifest.json   (MCP server reads this)
+ *   lib/ai/model-manifest.json                (Next.js app reads this)
+ *
+ * Triggers:
+ *   - Manual: npx tsx scripts/evaluate-models.ts
+ *   - Every 2 weeks via GitHub Actions (.github/workflows/model-evaluation.yml)
+ *   - On push if models.changed is detected by the action
+ *   - Called programmatically when new BidBlender functionality is added
+ */
+
+import { discoverAndAllocate, type AllocationManifest } from "../packages/mcp-model-router/src/discover.js";
+import * as fs from "fs";
+import * as path from "path";
+
+const ROOT = path.resolve(process.cwd());
+const MANIFEST_PATHS = [
+  path.join(ROOT, "packages", "mcp-model-router", "manifest.json"),
+  path.join(ROOT, "lib", "ai", "model-manifest.json"),
+];
+
+function loadExistingManifest(): AllocationManifest | null {
+  try {
+    const raw = fs.readFileSync(MANIFEST_PATHS[0], "utf8");
+    return JSON.parse(raw) as AllocationManifest;
+  } catch {
+    return null;
+  }
+}
+
+function detectTriggerReason(existing: AllocationManifest | null): AllocationManifest["triggerReason"] {
+  const arg = process.argv[2];
+  if (arg === "--new-models") return "new_models";
+  if (arg === "--new-functionality") return "new_functionality";
+  if (arg === "--scheduled") return "scheduled";
+
+  if (!existing) return "manual";
+
+  const nextEval = new Date(existing.nextEvaluationAt);
+  if (new Date() >= nextEval) return "scheduled";
+
+  return "manual";
+}
+
+function isEvaluationNeeded(existing: AllocationManifest | null, reason: AllocationManifest["triggerReason"]): boolean {
+  if (!existing) return true;
+  if (reason !== "manual") return true;
+
+  // Manual run — still allow but warn
+  const nextEval = new Date(existing.nextEvaluationAt);
+  const daysUntil = Math.ceil((nextEval.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  if (daysUntil > 0) {
+    console.log(`ℹ️  Next scheduled evaluation in ${daysUntil} days (${existing.nextEvaluationAt}).`);
+    console.log(`   Running anyway (manual trigger).`);
+  }
+
+  return true;
+}
+
+function printDiff(existing: AllocationManifest | null, fresh: AllocationManifest) {
+  if (!existing) {
+    console.log("✨ First-time manifest generated.");
+    return;
+  }
+
+  const oldModels = new Set(existing.availableModels.map((m) => m.id));
+  const newModels = new Set(fresh.availableModels.map((m) => m.id));
+
+  const added = [...newModels].filter((id) => !oldModels.has(id));
+  const removed = [...oldModels].filter((id) => !newModels.has(id));
+
+  if (added.length) console.log(`\n🆕 New models detected: ${added.join(", ")}`);
+  if (removed.length) console.log(`\n🗑️  Models removed: ${removed.join(", ")}`);
+
+  console.log("\n📋 Allocation changes:");
+  for (const [taskId, alloc] of Object.entries(fresh.allocations)) {
+    const prev = existing.allocations[taskId];
+    if (!prev) {
+      console.log(`  + ${taskId}: NEW → ${alloc.allocatedModel}`);
+    } else if (prev.allocatedModel !== alloc.allocatedModel) {
+      console.log(`  ~ ${taskId}: ${prev.allocatedModel} → ${alloc.allocatedModel}`);
+    }
+  }
+}
+
+async function main() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.error("❌ OPENAI_API_KEY is not set");
+    process.exit(1);
+  }
+
+  const existing = loadExistingManifest();
+  const reason = detectTriggerReason(existing);
+
+  if (!isEvaluationNeeded(existing, reason)) {
+    console.log("✅ Evaluation not needed yet. Use --force to override.");
+    process.exit(0);
+  }
+
+  console.log(`\n🔍 Discovering OpenAI models... (trigger: ${reason})`);
+  const manifest = await discoverAndAllocate(apiKey, reason);
+
+  console.log(`\n✅ Found ${manifest.summary.chatModelsAvailable} chat-capable models from ${manifest.summary.totalModelsDiscovered} total.`);
+  console.log(`📦 Allocated ${Object.keys(manifest.allocations).length} BidBlender tasks across: ${manifest.summary.allocatedModels.join(", ")}`);
+  console.log(`💰 Estimated monthly cost at 10k jobs: $${manifest.summary.estimatedMonthlyCostAt10kJobs}`);
+  console.log(`📅 Next evaluation scheduled: ${manifest.nextEvaluationAt}`);
+
+  printDiff(existing, manifest);
+
+  // Write manifest to all target paths
+  const json = JSON.stringify(manifest, null, 2);
+  for (const dest of MANIFEST_PATHS) {
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, json, "utf8");
+    console.log(`\n💾 Written: ${dest}`);
+  }
+
+  // Print allocations table
+  console.log("\n┌─────────────────────────────────────────────────────────────────────┐");
+  console.log("│  BidBlender Task Allocations                                        │");
+  console.log("├──────────────────────────────────┬────────────────────┬─────────────┤");
+  console.log("│ Task                             │ Model              │ $/1k tokens │");
+  console.log("├──────────────────────────────────┼────────────────────┼─────────────┤");
+  for (const alloc of Object.values(manifest.allocations)) {
+    const task = alloc.taskId.padEnd(32).slice(0, 32);
+    const model = alloc.allocatedModel.padEnd(18).slice(0, 18);
+    const cost = `$${alloc.estimatedCostPer1kTokens.toFixed(5)}`.padStart(11);
+    console.log(`│ ${task} │ ${model} │ ${cost} │`);
+  }
+  console.log("└──────────────────────────────────┴────────────────────┴─────────────┘");
+}
+
+main().catch((err) => {
+  console.error("\n❌ Evaluation failed:", err.message);
+  process.exit(1);
+});
