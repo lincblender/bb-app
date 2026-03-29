@@ -1,6 +1,7 @@
 /**
  * BidBlender AI Analysis Job Runner
  * Builds prompts, calls OpenAI, validates responses per docs/AI.md
+ * Uses dynamic model selection via lib/ai/model-router.ts
  */
 
 import OpenAI from "openai";
@@ -18,13 +19,7 @@ import {
   PARADIGM_PROMPT_ADDITIONS,
   SYSTEM_PROMPT_TEMPLATE,
 } from "./constants";
-
-/** Model mapping - short-term: single model; future: route by model_profile */
-const MODEL_BY_PROFILE: Record<string, string> = {
-  economy: process.env.OPENAI_MODEL_DEFAULT ?? "gpt-4o-mini",
-  balanced: process.env.OPENAI_MODEL_DEFAULT ?? "gpt-4o-mini",
-  deep: process.env.OPENAI_MODEL_DEEP ?? process.env.OPENAI_MODEL_DEFAULT ?? "gpt-4o",
-};
+import { selectModel, estimateModelCost, type ModelSelection } from "./model-router";
 
 /** Build user prompt from request inputs */
 function buildUserPrompt(req: AnalysisJobRequest): string {
@@ -119,8 +114,7 @@ function validateStrategicResults(results: unknown): boolean {
 }
 
 /** Build the minimal envelope for the AI to fill - we inject job_id etc after */
-function buildExpectedEnvelope(req: AnalysisJobRequest): Record<string, unknown> {
-  const modelId = MODEL_BY_PROFILE[req.model_profile] ?? MODEL_BY_PROFILE.balanced;
+function buildExpectedEnvelope(req: AnalysisJobRequest, selection: ModelSelection): Record<string, unknown> {
   const strategicResults =
     req.paradigm === "STRATEGIC_BID_INTELLIGENCE"
       ? {
@@ -158,9 +152,10 @@ function buildExpectedEnvelope(req: AnalysisJobRequest): Record<string, unknown>
     status: "success",
     model: {
       provider: "openai",
-      model_id: modelId,
+      model_id: selection.modelId,
       model_profile: req.model_profile,
-      temperature: req.model_profile === "deep" ? 0.3 : 0.2,
+      temperature: selection.temperature,
+      reasoning_effort: selection.reasoningEffort ?? null,
     },
     summary: "",
     results: strategicResults,
@@ -214,23 +209,7 @@ function validateEnvelope(obj: unknown): obj is AIAnalysisResponse {
   return true;
 }
 
-/**
- * Estimate cost from OpenAI API pricing.
- * Rates from https://developers.openai.com/api/docs/pricing (Standard tier)
- */
-const MODEL_RATES: Record<string, [number, number]> = {
-  "gpt-5-nano": [0.05, 0.4],
-  "gpt-4o-mini": [0.15, 0.6],
-  "gpt-5-mini": [0.25, 2.0],
-  "gpt-4o": [2.5, 10.0],
-  "gpt-5.4": [2.5, 15.0],
-};
-
-function estimateCost(inputTokens: number, outputTokens: number, modelId: string): number {
-  const key = Object.keys(MODEL_RATES).find((k) => modelId.includes(k)) ?? "gpt-4o-mini";
-  const [inPerM, outPerM] = MODEL_RATES[key];
-  return (inputTokens / 1_000_000) * inPerM + (outputTokens / 1_000_000) * outPerM;
-}
+// Cost estimation now uses the model registry via estimateModelCost from model-router.ts
 
 export interface RunAnalysisOptions {
   /** Override API key (default: process.env.OPENAI_API_KEY) */
@@ -273,22 +252,45 @@ export async function runAnalysisJob(
     throw new Error("OPENAI_API_KEY is not set");
   }
 
+  // Dynamic model selection based on paradigm, profile, and constraints
+  const selection = selectModel(req.paradigm, req.model_profile, {
+    modelOverride: req.model_override ?? process.env.OPENAI_MODEL_OVERRIDE,
+  });
+
+  console.log(
+    `[model-router] Selected ${selection.displayName} (${selection.modelId}) ` +
+    `for ${req.paradigm} / ${req.model_profile}` +
+    (selection.reasoningEffort ? ` [reasoning: ${selection.reasoningEffort}]` : "")
+  );
+
   const openai = new OpenAI({ apiKey });
-  const modelId = MODEL_BY_PROFILE[req.model_profile] ?? MODEL_BY_PROFILE.balanced;
   const startedAt = new Date().toISOString();
 
-  const systemPrompt = `${SYSTEM_PROMPT_TEMPLATE}\n\nExpected response structure:\n${JSON.stringify(buildExpectedEnvelope(req), null, 2)}`;
+  const systemPrompt = `${SYSTEM_PROMPT_TEMPLATE}\n\nExpected response structure:\n${JSON.stringify(buildExpectedEnvelope(req, selection), null, 2)}`;
   const userPrompt = buildUserPrompt(req);
 
-  const completion = await openai.chat.completions.create({
-    model: modelId,
+  // Build request options — reasoning models use different parameters
+  const completionParams: OpenAI.ChatCompletionCreateParamsNonStreaming = {
+    model: selection.modelId,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
     response_format: { type: "json_object" },
-    temperature: req.model_profile === "deep" ? 0.3 : 0.2,
-  });
+  };
+
+  if (selection.reasoning) {
+    // o-series models: use reasoning_effort instead of temperature
+    // temperature must be 1 (default) for reasoning models
+    completionParams.temperature = 1;
+    if (selection.reasoningEffort) {
+      (completionParams as unknown as Record<string, unknown>).reasoning_effort = selection.reasoningEffort;
+    }
+  } else {
+    completionParams.temperature = selection.temperature;
+  }
+
+  const completion = await openai.chat.completions.create(completionParams);
 
   const choice = completion.choices[0];
   if (!choice?.message?.content) {
@@ -329,13 +331,14 @@ export async function runAnalysisJob(
     input_tokens: inputTokens,
     output_tokens: outputTokens,
     total_tokens: totalTokens,
-    estimated_cost_usd: estimateCost(inputTokens, outputTokens, modelId),
+    estimated_cost_usd: estimateModelCost(inputTokens, outputTokens, selection.modelId),
   };
   response.model = {
     provider: "openai",
-    model_id: modelId,
+    model_id: selection.modelId,
     model_profile: req.model_profile,
-    temperature: req.model_profile === "deep" ? 0.3 : 0.2,
+    temperature: selection.temperature,
+    reasoning_effort: selection.reasoningEffort ?? null,
   };
 
   return response;
