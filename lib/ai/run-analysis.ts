@@ -20,6 +20,11 @@ import {
   SYSTEM_PROMPT_TEMPLATE,
 } from "./constants";
 import { selectModel, estimateModelCost, type ModelSelection } from "./model-router";
+import {
+  checkAnalysisRateLimit,
+  logAnalysisJob,
+  extractErrorCode,
+} from "./rate-limit";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Retry helper
@@ -289,18 +294,74 @@ export async function runAnalysisJob(
 
   // Route to Supabase Edge Function if configured for remote mode
   if (process.env.USE_SQLITE !== "true") {
+    const supabase = await createClient();
+    const jobStart = Date.now();
+
+    // ── Rate limit check ───────────────────────────────────────────────────
+    const rateLimit = await checkAnalysisRateLimit(supabase, req.tenant_id);
+    if (!rateLimit.allowed) {
+      const err = Object.assign(
+        new Error(
+          `Analysis rate limit reached (${rateLimit.used}/${rateLimit.limit} jobs this hour). ` +
+          `Try again in ${rateLimit.retryAfterSeconds ?? 60}s.`
+        ),
+        { error_code: "rate_limited", retryAfterSeconds: rateLimit.retryAfterSeconds }
+      );
+      throw err;
+    }
+
+    // ── Call edge function ─────────────────────────────────────────────────
+    let response: AIAnalysisResponse | null = null;
+    let edgeError: unknown = null;
+
     try {
-      const supabase = await createClient();
       const { data, error } = await supabase.functions.invoke("run-analysis-job", {
         body: req,
       });
-      if (error) {
-        throw error;
-      }
-      return data as AIAnalysisResponse;
+      if (error) throw error;
+      response = data as AIAnalysisResponse;
     } catch (err) {
+      edgeError = err;
       console.error("Supabase Edge Function 'run-analysis-job' failed. Falling back to local execution:", err);
-      // Fallback to local execution below seamlessly
+    }
+
+    // ── Log job (success or edge-function failure) ─────────────────────────
+    if (response) {
+      await logAnalysisJob(supabase, {
+        jobId: req.job_id,
+        tenantId: req.tenant_id,
+        analysisType: req.analysis_type,
+        paradigm: req.paradigm,
+        modelId: response.model?.model_id,
+        modelProfile: req.model_profile,
+        inputTokens: response.usage?.input_tokens,
+        outputTokens: response.usage?.output_tokens,
+        totalTokens: response.usage?.total_tokens,
+        estimatedCostUsd: response.usage?.estimated_cost_usd,
+        status: response.status ?? "success",
+        latencyMs: response.timestamps?.latency_ms ?? (Date.now() - jobStart),
+      });
+      return response;
+    }
+
+    if (edgeError) {
+      const code = extractErrorCode(edgeError);
+      await logAnalysisJob(supabase, {
+        jobId: req.job_id,
+        tenantId: req.tenant_id,
+        analysisType: req.analysis_type,
+        paradigm: req.paradigm,
+        modelProfile: req.model_profile,
+        status: "failed",
+        errorCode: code,
+        latencyMs: Date.now() - jobStart,
+      });
+      // Only fall through to local execution on transient/unknown errors.
+      // Hard errors (rate_limited, auth_error) should propagate immediately.
+      if (code === "rate_limited" || code === "model_overloaded" || code === "auth_error" || code === "quota_exceeded") {
+        throw edgeError;
+      }
+      // Transient / unknown → fall through to local execution below
     }
   }
 
@@ -308,6 +369,8 @@ export async function runAnalysisJob(
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not set");
   }
+
+  const localJobStart = Date.now();
 
   // Dynamic model selection based on paradigm, profile, and constraints
   const selection = selectModel(req.paradigm, req.model_profile, {
@@ -423,6 +486,27 @@ export async function runAnalysisJob(
   if (validationWarnings.length > 0) {
     response.status = "partial";
     (response as unknown as Record<string, unknown>).validation_warnings = validationWarnings;
+  }
+
+  // Log local execution job (fallback path or SQLite mode)
+  try {
+    const supabase = await createClient();
+    await logAnalysisJob(supabase, {
+      jobId: req.job_id,
+      tenantId: req.tenant_id,
+      analysisType: req.analysis_type,
+      paradigm: req.paradigm,
+      modelId: selection.modelId,
+      modelProfile: req.model_profile,
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      estimatedCostUsd: response.usage.estimated_cost_usd,
+      status: response.status ?? "success",
+      latencyMs: Date.now() - localJobStart,
+    });
+  } catch {
+    // Non-fatal — never block the response for a logging failure
   }
 
   return response;
