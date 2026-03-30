@@ -21,6 +21,63 @@ import {
 } from "./constants";
 import { selectModel, estimateModelCost, type ModelSelection } from "./model-router";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Retry helper
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** OpenAI status codes that are worth retrying (transient). */
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+/**
+ * Determines if an OpenAI SDK error is transiently retryable.
+ * Checks the HTTP status on the error object (OpenAI SDK attaches `.status`).
+ */
+function isRetryable(err: unknown): boolean {
+  if (err && typeof err === "object" && "status" in err) {
+    return RETRYABLE_STATUS.has((err as { status: number }).status);
+  }
+  // Network errors (no status) are also retryable
+  if (err instanceof Error && (err.message.includes("fetch") || err.message.includes("ECONNRESET"))) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Calls `fn` up to `maxAttempts` times with exponential backoff between failures.
+ * Only retries on transient errors (429, 5xx, network).
+ * Throws immediately on non-retryable errors.
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  label: string,
+  maxAttempts = 3,
+): Promise<T> {
+  const BASE_DELAY_MS = 1_000;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const retryable = isRetryable(err);
+      const isLast = attempt === maxAttempts;
+
+      if (!retryable || isLast) {
+        if (retryable && isLast) {
+          console.error(`[run-analysis] ${label}: Attempt ${attempt} failed. Giving up after ${maxAttempts} attempts.`);
+        }
+        throw err;
+      }
+
+      const delayMs = BASE_DELAY_MS * Math.pow(3, attempt - 1); // 1s, 3s, 9s
+      const status = err && typeof err === "object" && "status" in err ? (err as { status: number }).status : "network";
+      console.warn(`[run-analysis] ${label}: Attempt ${attempt} failed (${status}). Retrying in ${delayMs}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  // Unreachable — TypeScript needs this
+  throw new Error(`[run-analysis] ${label}: Retry loop exhausted`);
+}
+
 /** Build user prompt from request inputs */
 function buildUserPrompt(req: AnalysisJobRequest): string {
   const { analysis_type, paradigm, inputs } = req;
@@ -290,7 +347,10 @@ export async function runAnalysisJob(
     completionParams.temperature = selection.temperature;
   }
 
-  const completion = await openai.chat.completions.create(completionParams);
+  const completion = await withRetry(
+    () => openai.chat.completions.create(completionParams),
+    `${req.paradigm}/${req.model_profile}`,
+  );
 
   const choice = completion.choices[0];
   if (!choice?.message?.content) {
