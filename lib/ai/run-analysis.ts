@@ -364,12 +364,30 @@ export async function runAnalysisJob(
     throw new Error("OpenAI response is not valid JSON");
   }
 
+  // ── Validate the envelope ────────────────────────────────────────────────────────
+  const validationWarnings: string[] = [];
+
+  // Genuinely unusable: no parseable content at all
   if (!validateEnvelope(parsed)) {
-    throw new Error("OpenAI response does not match required envelope structure");
+    const raw = parsed as Record<string, unknown>;
+    const hasSummary = typeof raw?.summary === "string" && (raw.summary as string).length > 0;
+    const hasResults = typeof raw?.results === "object" && raw.results !== null;
+
+    if (!hasSummary || !hasResults) {
+      throw new Error("OpenAI response is missing required summary or results — cannot produce a useful output");
+    }
+
+    // Has core content but failed other field checks — continue as partial
+    validationWarnings.push("envelope_validation_failed");
+    console.warn(`[run-analysis] VALIDATION WARNING: envelope check failed for ${req.paradigm}. Returning partial result.`);
   }
 
-  if (req.paradigm === "STRATEGIC_BID_INTELLIGENCE" && !validateStrategicResults((parsed as AIAnalysisResponse).results)) {
-    throw new Error("OpenAI response does not match required strategic decision structure");
+  // ── Strategic validator ─────────────────────────────────────────────────────────
+  if (req.paradigm === "STRATEGIC_BID_INTELLIGENCE") {
+    if (!validateStrategicResults((parsed as AIAnalysisResponse).results)) {
+      validationWarnings.push("strategic_schema_mismatch");
+      console.warn(`[run-analysis] VALIDATION WARNING: strategic result schema mismatch for ${req.paradigm}. Returning partial result.`);
+    }
   }
 
   const response = parsed as AIAnalysisResponse;
@@ -400,6 +418,12 @@ export async function runAnalysisJob(
     temperature: selection.temperature,
     reasoning_effort: selection.reasoningEffort ?? null,
   };
+
+  // Stamp partial status and warnings if any validation issues were found
+  if (validationWarnings.length > 0) {
+    response.status = "partial";
+    (response as unknown as Record<string, unknown>).validation_warnings = validationWarnings;
+  }
 
   return response;
 }
