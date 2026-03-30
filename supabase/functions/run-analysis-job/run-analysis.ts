@@ -4,7 +4,7 @@
 
 import OpenAI from "npm:openai";
 import type { AnalysisJobRequest, AIAnalysisResponse } from "./types.ts";
-import { getModelByProfile } from "./constants.ts";
+import { getModelForJob } from "./constants.ts";
 import { buildUserPrompt } from "./prompt.ts";
 import { buildExpectedEnvelope, validateEnvelope, validateStrategicResultsWithReason } from "./validation.ts";
 import { estimateCost } from "./cost.ts";
@@ -17,8 +17,10 @@ export async function runAnalysis(req: AnalysisJobRequest): Promise<AIAnalysisRe
   }
 
   const openai = new OpenAI({ apiKey });
-  const modelId = getModelByProfile(req.model_profile);
+  const modelId = getModelForJob(req.paradigm, req.model_profile);
   const startedAt = new Date().toISOString();
+
+  console.log(`[run-analysis-job] ${req.paradigm}/${req.model_profile} → ${modelId}`);
 
   const systemPrompt = `${SYSTEM_PROMPT_TEMPLATE}\n\nExpected response structure:\n${JSON.stringify(buildExpectedEnvelope(req), null, 2)}`;
   const userPrompt = buildUserPrompt(req);
