@@ -1,4 +1,5 @@
 import type { ConnectorSource, TenderBoard } from "@/lib/types";
+import { TENDER_FEED_REGISTRY, feedConnectorId, feedBoardId } from "./feed-registry";
 
 export const AUSTENDER_RSS_URL = "https://www.tenders.gov.au/public_data/rss/rss.xml";
 
@@ -6,11 +7,33 @@ export const CONNECTOR_IDS = {
   linkedin: "conn-linkedin-profile",
   linkedinCompanyAdmin: "conn-linkedin-company-admin",
   hubspot: "conn-hubspot-history",
-  austender: "conn-austender-rss",
+  // Tender board feed connectors — keyed by feed registry ID
+  austender: "conn-feed-austender-cth",
+  austenderNsw: "conn-feed-etendering-nsw",
+  austenderVic: "conn-feed-tenders-vic",
+  austenderQld: "conn-feed-qtenders-qld",
+  austenderSa: "conn-feed-etendering-sa",
+  austenderWa: "conn-feed-tenders-wa",
+  austenderTas: "conn-feed-tenders-tas",
+  austenderAct: "conn-feed-tenders-act",
+  austenderNt: "conn-feed-tenders-nt",
+  tenderlink: "conn-feed-tenderlink",
 } as const;
 
 export const TENDER_BOARD_IDS = {
-  austender: "tb-austender",
+  // Commonwealth (primary — original ID kept for backward compat)
+  austender: "tb-austender-cth",
+  // States & territories
+  nswEtendering: "tb-etendering-nsw",
+  vicTenders: "tb-tenders-vic",
+  qldQtenders: "tb-qtenders-qld",
+  saEtendering: "tb-etendering-sa",
+  waTenders: "tb-tenders-wa",
+  tasTenders: "tb-tenders-tas",
+  actTenders: "tb-tenders-act",
+  ntTenders: "tb-tenders-nt",
+  // Aggregators
+  tenderlink: "tb-tenderlink",
 } as const;
 
 export type SetupPillarId = "reach" | "history" | "capability" | "opportunity";
@@ -24,6 +47,22 @@ export interface SetupPillarDefinition {
   href: string;
   actionQuery?: string;
 }
+
+// Generate connector catalog entries for all registered tender feeds.
+const TENDER_FEED_CONNECTORS: ConnectorSource[] = TENDER_FEED_REGISTRY.map((feed) => ({
+  id: feedConnectorId(feed.id),
+  name: feed.name,
+  status: "disconnected" as const,
+  sourceType: "tender",
+  contribution: `${feed.region} government opportunity discovery via ${feed.feedType.toUpperCase()} feed.${feed.note ? " " + feed.note : ""}`,
+  config: {
+    feed_id: feed.id,
+    feed_url: feed.feedUrl,
+    feed_type: feed.feedType,
+    feed_status: feed.status,
+    import_limit: 25,
+  },
+}));
 
 export const CORE_CONNECTOR_CATALOG: ConnectorSource[] = [
   {
@@ -68,28 +107,22 @@ export const CORE_CONNECTOR_CATALOG: ConnectorSource[] = [
       },
     },
   },
-  {
-    id: CONNECTOR_IDS.austender,
-    name: "AusTender RSS Feed",
-    status: "disconnected",
-    sourceType: "tender",
-    contribution:
-      "Commonwealth opportunity discovery via the official RSS feed while deeper board parsing is still being built.",
-    config: {
-      feed_url: AUSTENDER_RSS_URL,
-      import_limit: 25,
-    },
-  },
+  ...TENDER_FEED_CONNECTORS,
 ];
 
-export const CORE_TENDER_BOARDS: TenderBoard[] = [
-  {
-    id: TENDER_BOARD_IDS.austender,
-    name: "AusTender",
-    description: "Australian Government ATM notices via the official RSS feed.",
-    region: "AU",
-  },
-];
+export const CORE_TENDER_BOARDS: TenderBoard[] = TENDER_FEED_REGISTRY.map((feed) => ({
+  id: feedBoardId(feed.id),
+  name: feed.name,
+  description: `${feed.region} government tenders via ${feed.feedType.toUpperCase()} feed.`,
+  region: feed.jurisdiction,
+}));
+
+// Backward-compat alias so existing austender sync route keeps working.
+// The connector was previously "conn-austender-rss" — we now use the registry ID.
+/** @deprecated Use CONNECTOR_IDS.austender */
+export const LEGACY_AUSTENDER_CONNECTOR_ID = "conn-austender-rss";
+/** @deprecated Use TENDER_BOARD_IDS.austender */
+export const LEGACY_AUSTENDER_BOARD_ID = "tb-austender";
 
 export const SETUP_PILLARS: SetupPillarDefinition[] = [
   {
@@ -104,10 +137,10 @@ export const SETUP_PILLARS: SetupPillarDefinition[] = [
   },
   {
     id: "opportunity",
-    title: "Opportunity via AusTender RSS",
+    title: "Opportunity via tender feeds",
     eyebrow: "Pillar 2",
     body:
-      "Choose the market source. Use the official AusTender RSS feed as the interim opportunity source. Import a limited set of current notices, then enrich selectively as the user opens them.",
+      "Choose the market source. AusTender is the live Commonwealth feed today. State and territory feeds are available to add. Import a limited set of current notices, then enrich selectively as the user opens them.",
     connectorId: CONNECTOR_IDS.austender,
     href: "/console/connectors?action=sync-austender",
     actionQuery: "sync-austender",

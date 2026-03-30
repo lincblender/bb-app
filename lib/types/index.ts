@@ -87,17 +87,75 @@ export interface BuyerOrganisation {
   acquisitionHistory?: string[];
   boardComplexity?: "low" | "medium" | "high";
   scale?: "small" | "medium" | "large" | "enterprise";
+  /** Australian Business Number (11 digits, no spaces). */
+  abn?: string | null;
+  /** e.g. "Commonwealth Entity", "State Entity", "Statutory Authority". */
+  agencyType?: string | null;
 }
+
+/**
+ * How much data has been gathered for this opportunity.
+ *   feed        → RSS/Atom item only (title, link, summary, pubDate)
+ *   opportunity → Notice page front matter (close date, value, contact, addenda list)
+ *   detail      → All documents pulled and stored
+ */
+export type OpportunityDetailLevel = "feed" | "opportunity" | "detail";
 
 export interface Opportunity {
   id: string;
   title: string;
   issuingOrganisationId: string;
   category: string;
+  /** Legacy alias for closesAt (DATE string). Kept for backward compat. */
   dueDate: string;
   summary: string;
   status: "new" | "reviewing" | "pursuing" | "monitoring" | "passed";
+  /** tender_boards.id of the feed this came from. */
   sourceId?: string;
+  // ── Enriched fields (populated at opportunity or detail level) ──────────
+  /** Source system's own notice reference (e.g. "FINANCE-123456"). */
+  noticeId?: string | null;
+  /** Direct URL to the notice on the source portal. */
+  sourceUrl?: string | null;
+  /** When the notice was published (ISO string). */
+  publishedAt?: string | null;
+  /** Close date with time (ISO string — more precise than dueDate). */
+  closesAt?: string | null;
+  /** Estimated minimum value in AUD (integer dollars). */
+  valueMin?: number | null;
+  /** Estimated maximum value in AUD (integer dollars). */
+  valueMax?: number | null;
+  /** e.g. "ATM", "RFT", "RFQ", "EOI", "CN". */
+  procurementType?: string | null;
+  /** feed-registry.ts feed ID (e.g. "austender-cth"). */
+  feedId?: string | null;
+  detailLevel?: OpportunityDetailLevel;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  /** Arbitrary extra data from the source. */
+  rawMetadata?: Record<string, unknown> | null;
+}
+
+export interface OpportunityAddendum {
+  id: string;
+  opportunityId: string;
+  addendumNumber: number | null;
+  title: string;
+  description: string | null;
+  sourceUrl: string | null;
+  publishedAt: string | null;
+}
+
+export interface OpportunityDocument {
+  id: string;
+  opportunityId: string;
+  title: string;
+  sourceUrl: string | null;
+  fileType: string | null;
+  storagePath: string | null;
+  content: string | null;
+  sizeBytes: number | null;
+  fetchedAt: string | null;
 }
 
 export interface TenderBoard {

@@ -100,6 +100,8 @@ export function useConnectorData(): ConnectorData {
         : null,
     hubspotLastSync: getTimestampLabel(hubspotConnector?.config?.last_synced_at),
     austenderLastSync: getTimestampLabel(austenderConnector?.config?.last_synced_at),
-    austenderOpportunityCount: opportunities.filter((o) => o.sourceId === "tb-austender").length,
+    austenderOpportunityCount: opportunities.filter(
+      (o) => o.sourceId === "tb-austender" || o.sourceId === "tb-austender-cth" || typeof o.feedId === "string"
+    ).length,
   };
 }

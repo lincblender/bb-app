@@ -22,6 +22,18 @@ export function mapRowToOpportunity(row: Record<string, unknown>): OpportunityWi
     summary: (row.summary as string) ?? "",
     status: row.status as OpportunityWithAssessment["status"],
     sourceId: typeof row.source_id === "string" ? row.source_id : undefined,
+    // Enrichment fields
+    noticeId: (row.notice_id as string | null) ?? null,
+    sourceUrl: (row.source_url as string | null) ?? null,
+    publishedAt: (row.published_at as string | null) ?? null,
+    closesAt: (row.closes_at as string | null) ?? null,
+    valueMin: (row.value_min as number | null) ?? null,
+    valueMax: (row.value_max as number | null) ?? null,
+    procurementType: (row.procurement_type as string | null) ?? null,
+    feedId: (row.feed_id as string | null) ?? null,
+    detailLevel: ((row.detail_level as string) ?? "feed") as "feed" | "opportunity" | "detail",
+    contactName: (row.contact_name as string | null) ?? null,
+    contactEmail: (row.contact_email as string | null) ?? null,
     assessment: {
       technicalFit: (assessment?.technical_fit as number) ?? 0,
       networkStrength: (assessment?.network_strength as number) ?? 0,
@@ -46,6 +58,8 @@ export function mapBuyerOrganisationRow(row: Record<string, unknown>): BuyerOrga
     acquisitionHistory: (row.acquisition_history as string[]) ?? [],
     boardComplexity: (row.board_complexity as BuyerOrganisation["boardComplexity"]) ?? undefined,
     scale: (row.scale as BuyerOrganisation["scale"]) ?? undefined,
+    abn: (row.abn as string | null) ?? null,
+    agencyType: (row.agency_type as string | null) ?? null,
   };
 }
 

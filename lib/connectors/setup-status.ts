@@ -111,20 +111,32 @@ function getHubSpotDetail(connector: ConnectorSource | undefined) {
   return "Connect HubSpot, then pull only recent essentials and fetch more only when a client or opportunity needs it.";
 }
 
+// Count opportunities from any tender feed (legacy or current board ID).
+function countTenderOpportunities(opportunities: Opportunity[]): number {
+  return opportunities.filter(
+    (o) =>
+      // New board ID
+      o.sourceId === TENDER_BOARD_IDS.austender ||
+      // Legacy board ID (pre-refactor rows)
+      o.sourceId === "tb-austender" ||
+      // Any feed-based row
+      typeof o.feedId === "string"
+  ).length;
+}
+
 function getOpportunityStatus(
   connector: ConnectorSource | undefined,
   opportunities: Opportunity[]
 ): SetupPillarStatus["status"] {
-  const importedCount = opportunities.filter((opportunity) => opportunity.sourceId === TENDER_BOARD_IDS.austender).length;
-  if (importedCount > 0) return "ready";
+  if (countTenderOpportunities(opportunities) > 0) return "ready";
   if (connector?.status === "live") return "in-progress";
   return "next";
 }
 
 function getOpportunityDetail(connector: ConnectorSource | undefined, opportunities: Opportunity[]) {
-  const importedCount = opportunities.filter((opportunity) => opportunity.sourceId === TENDER_BOARD_IDS.austender).length;
+  const importedCount = countTenderOpportunities(opportunities);
   if (importedCount > 0) {
-    return `${importedCount} AusTender notices are in the workspace.`;
+    return `${importedCount} tender notices are in the workspace.`;
   }
   if (connector?.status === "live") {
     return "AusTender is connected. Sync again to refresh the current ATM list.";
