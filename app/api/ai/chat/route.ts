@@ -20,12 +20,26 @@ import { fetchCurrentTenantId, fetchWorkspaceData } from "@/lib/workspace/server
 
 export const dynamic = "force-dynamic";
 
+/** Machine-readable error codes the client can act on specifically. */
+type AiErrorCode =
+  | "AI_NOT_CONFIGURED"
+  | "UNAUTHORIZED"
+  | "INVALID_REQUEST"
+  | "RATE_LIMITED"
+  | "ANALYSIS_FAILED"
+  | "TIMEOUT";
+
+function errorResponse(
+  code: AiErrorCode,
+  message: string,
+  status: number,
+) {
+  return NextResponse.json({ error: message, code, blocks: null }, { status });
+}
+
 export async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: "AI not configured", blocks: null },
-      { status: 503 }
-    );
+    return errorResponse("AI_NOT_CONFIGURED", "AI features are not available right now.", 503);
   }
 
   try {
@@ -52,10 +66,7 @@ export async function POST(request: Request) {
     ]);
 
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Unauthorized: Tenant ID missing", blocks: null },
-        { status: 401 }
-      );
+      return errorResponse("UNAUTHORIZED", "Unauthorized: Tenant ID missing.", 401);
     }
     const opp = primaryOppId && tenantData
       ? tenantData.opportunities.find((o) => o.id === primaryOppId)
@@ -152,9 +163,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ blocks });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analysis failed";
-    return NextResponse.json(
-      { error: message, blocks: null },
-      { status: 500 }
-    );
+
+    // Rate limit — retries exhausted
+    if (err && typeof err === "object" && "status" in err && (err as { status: number }).status === 429) {
+      return errorResponse("RATE_LIMITED", "You've reached the AI analysis limit. Try again in a moment.", 429);
+    }
+
+    // Timeout
+    if (message.toLowerCase().includes("timeout") || message.toLowerCase().includes("timed out")) {
+      return errorResponse("TIMEOUT", "Analysis took too long. Try a simpler query or fewer attachments.", 504);
+    }
+
+    // General analysis failure
+    return errorResponse("ANALYSIS_FAILED", "Analysis failed. Your data was not affected.", 500);
   }
 }
