@@ -7,7 +7,7 @@ import type {
   AIAnalysisResponse,
   StrategicBidIntelligenceResults,
 } from "./types.ts";
-import { getModelByProfile } from "./constants.ts";
+import { getModelForJob, getReasoningEffort, isReasoningModel } from "./constants.ts";
 
 const DIMENSION_KEYS = [
   ["pursuit_capacity", "pursuitCapacity"],
@@ -24,6 +24,10 @@ function getDimension(obj: Record<string, unknown>, keys: readonly [string, stri
 export type StrategicValidationResult =
   | { valid: true }
   | { valid: false; reason: string; rawResults: unknown };
+
+export type EnvelopeValidationResult =
+  | { valid: true }
+  | { valid: false; reason: string };
 
 export function validateStrategicResults(results: unknown): boolean {
   const r = validateStrategicResultsWithReason(results);
@@ -91,7 +95,8 @@ export function validateStrategicResultsWithReason(results: unknown): StrategicV
 }
 
 export function buildExpectedEnvelope(req: AnalysisJobRequest): Record<string, unknown> {
-  const modelId = getModelByProfile(req.model_profile);
+  const modelId = getModelForJob(req.paradigm, req.model_profile);
+  const reasoning = isReasoningModel(modelId);
   const strategicResults =
     req.paradigm === "STRATEGIC_BID_INTELLIGENCE"
       ? {
@@ -131,7 +136,8 @@ export function buildExpectedEnvelope(req: AnalysisJobRequest): Record<string, u
       provider: "openai",
       model_id: modelId,
       model_profile: req.model_profile,
-      temperature: req.model_profile === "deep" ? 0.3 : 0.2,
+      temperature: reasoning ? 1 : req.model_profile === "deep" ? 0.3 : 0.2,
+      reasoning_effort: reasoning ? getReasoningEffort(req.model_profile) : null,
     },
     summary: "",
     results: strategicResults,
@@ -145,7 +151,11 @@ export function buildExpectedEnvelope(req: AnalysisJobRequest): Record<string, u
 }
 
 export function validateEnvelope(obj: unknown): obj is AIAnalysisResponse {
-  if (!obj || typeof obj !== "object") return false;
+  return validateEnvelopeWithReason(obj).valid;
+}
+
+export function validateEnvelopeWithReason(obj: unknown): EnvelopeValidationResult {
+  if (!obj || typeof obj !== "object") return { valid: false, reason: "response is not an object" };
   const o = obj as Record<string, unknown>;
   const required = [
     "schema_version",
@@ -165,21 +175,30 @@ export function validateEnvelope(obj: unknown): obj is AIAnalysisResponse {
     "timestamps",
   ];
   for (const k of required) {
-    if (!(k in o)) return false;
+    if (!(k in o)) return { valid: false, reason: `missing required field: ${k}` };
   }
-  if (typeof o.summary !== "string" || o.summary.length === 0) return false;
-  if (!Array.isArray(o.evidence)) return false;
-  if (!Array.isArray(o.missing_data)) return false;
-  if (typeof o.results !== "object" || o.results === null) return false;
+  if (typeof o.summary !== "string" || o.summary.length === 0) {
+    return { valid: false, reason: "summary must be a non-empty string" };
+  }
+  if (!Array.isArray(o.evidence)) return { valid: false, reason: "evidence must be an array" };
+  if (!Array.isArray(o.missing_data)) return { valid: false, reason: "missing_data must be an array" };
+  if (typeof o.results !== "object" || o.results === null) {
+    return { valid: false, reason: "results must be an object" };
+  }
   const model = o.model as Record<string, unknown>;
-  if (!model || typeof model !== "object") return false;
-  if (typeof model.provider !== "string" || typeof model.model_id !== "string") return false;
+  if (!model || typeof model !== "object") return { valid: false, reason: "model must be an object" };
+  if (typeof model.provider !== "string" || typeof model.model_id !== "string") {
+    return { valid: false, reason: "model.provider and model.model_id must be strings" };
+  }
   const usage = o.usage as Record<string, unknown>;
-  if (!usage || typeof usage !== "object") return false;
-  if (typeof usage.input_tokens !== "number" || typeof usage.output_tokens !== "number") return false;
+  if (!usage || typeof usage !== "object") return { valid: false, reason: "usage must be an object" };
+  if (typeof usage.input_tokens !== "number" || typeof usage.output_tokens !== "number") {
+    return { valid: false, reason: "usage.input_tokens and usage.output_tokens must be numbers" };
+  }
   const timestamps = o.timestamps as Record<string, unknown>;
-  if (!timestamps || typeof timestamps !== "object") return false;
-  if (typeof timestamps.started_at !== "string" || typeof timestamps.completed_at !== "string")
-    return false;
-  return true;
+  if (!timestamps || typeof timestamps !== "object") return { valid: false, reason: "timestamps must be an object" };
+  if (typeof timestamps.started_at !== "string" || typeof timestamps.completed_at !== "string") {
+    return { valid: false, reason: "timestamps.started_at and timestamps.completed_at must be strings" };
+  }
+  return { valid: true };
 }

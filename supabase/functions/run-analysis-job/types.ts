@@ -96,6 +96,7 @@ export interface AIAnalysisResponse {
     model_id: string;
     model_profile: ModelProfile;
     temperature: number;
+    reasoning_effort?: "low" | "medium" | "high" | null;
   };
   summary: string;
   results: Record<string, unknown>;
@@ -110,6 +111,7 @@ export interface AIAnalysisResponse {
     estimated_cost_usd: number;
   };
   timestamps: { started_at: string; completed_at: string; latency_ms: number };
+  validation_warnings?: string[];
 }
 
 export interface DecisionDimension {

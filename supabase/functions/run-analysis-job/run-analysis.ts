@@ -4,41 +4,70 @@
 
 import OpenAI from "npm:openai";
 import type { AnalysisJobRequest, AIAnalysisResponse } from "./types.ts";
-import { getModelForJob } from "./constants.ts";
+import { getModelForJob, getReasoningEffort, isReasoningModel } from "./constants.ts";
 import { buildUserPrompt } from "./prompt.ts";
-import { buildExpectedEnvelope, validateEnvelope, validateStrategicResultsWithReason } from "./validation.ts";
+import {
+  buildExpectedEnvelope,
+  validateEnvelopeWithReason,
+  validateStrategicResultsWithReason,
+} from "./validation.ts";
 import { estimateCost } from "./cost.ts";
 import { SYSTEM_PROMPT_TEMPLATE } from "./constants.ts";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Retry helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** HTTP status codes worth retrying (transient server-side failures). */
+const ANALYSIS_TIMEOUT_MS = 30_000;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+export type EdgeAiErrorCode =
+  | "AI_NOT_CONFIGURED"
+  | "INVALID_REQUEST"
+  | "RATE_LIMITED"
+  | "ANALYSIS_FAILED"
+  | "TIMEOUT";
+
+type EdgeAiError = Error & {
+  code: EdgeAiErrorCode;
+  status: number;
+  rawResults?: unknown;
+};
+
+function createEdgeAiError(
+  code: EdgeAiErrorCode,
+  message: string,
+  status: number,
+  extra?: { rawResults?: unknown },
+): EdgeAiError {
+  const error = new Error(message) as EdgeAiError;
+  error.code = code;
+  error.status = status;
+  if (extra?.rawResults !== undefined) {
+    error.rawResults = extra.rawResults;
+  }
+  return error;
+}
 
 function isRetryable(err: unknown): boolean {
   if (err && typeof err === "object" && "status" in err) {
     return RETRYABLE_STATUS.has((err as { status: number }).status);
   }
-  // Network errors (no status) are also retryable
-  if (err instanceof Error && (err.message.includes("fetch") || err.message.includes("ECONNRESET"))) {
-    return true;
+  if (err instanceof Error) {
+    const message = `${err.name} ${err.message}`.toLowerCase();
+    return message.includes("fetch") || message.includes("econnreset");
   }
   return false;
 }
 
-/**
- * Calls `fn` up to `maxAttempts` times with exponential backoff.
- * Only retries on transient errors (429, 5xx, network).
- * Throws immediately on non-retryable errors (400, 401, etc.).
- */
+function isTimeoutError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const message = `${err.name} ${err.message}`.toLowerCase();
+  return message.includes("timeout") || message.includes("timed out") || message.includes("abort");
+}
+
 async function withRetry<T>(
   fn: () => Promise<T>,
   label: string,
   maxAttempts = 3,
 ): Promise<T> {
-  const BASE_DELAY_MS = 1_000;
+  const baseDelayMs = 1_000;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
@@ -49,119 +78,132 @@ async function withRetry<T>(
       if (!retryable || isLast) {
         if (retryable && isLast) {
           console.error(
-            `[run-analysis-job] ${label}: attempt ${attempt} failed. Giving up after ${maxAttempts} attempts.`
+            `[run-analysis-job] ${label}: Attempt ${attempt} failed. Giving up after ${maxAttempts} attempts.`,
           );
         }
         throw err;
       }
 
-      const delayMs = BASE_DELAY_MS * Math.pow(3, attempt - 1); // 1s, 3s, 9s
-      const code =
-        err && typeof err === "object" && "status" in err
-          ? (err as { status: number }).status
-          : "network";
+      const delayMs = baseDelayMs * Math.pow(3, attempt - 1);
+      const status =
+        err && typeof err === "object" && "status" in err ? (err as { status: number }).status : "network";
+
       console.warn(
-        `[run-analysis-job] ${label}: attempt ${attempt} failed (${code}). Retrying in ${delayMs}ms…`
+        `[run-analysis-job] ${label}: Attempt ${attempt} failed (${status}). Retrying in ${delayMs}ms...`,
       );
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
-  throw new Error(`[run-analysis-job] ${label}: retry loop exhausted`);
+
+  throw new Error(`[run-analysis-job] ${label}: Retry loop exhausted`);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main analysis function
-// ─────────────────────────────────────────────────────────────────────────────
+function classifyOpenAiError(err: unknown): EdgeAiError {
+  if (err && typeof err === "object" && "code" in err && "status" in err) {
+    return err as EdgeAiError;
+  }
+  if (isTimeoutError(err)) {
+    return createEdgeAiError("TIMEOUT", "Analysis took too long. Try a simpler query or fewer attachments.", 504);
+  }
+  if (err && typeof err === "object" && "status" in err && (err as { status: number }).status === 429) {
+    return createEdgeAiError("RATE_LIMITED", "You've reached the AI analysis limit. Try again in a moment.", 429);
+  }
+  return createEdgeAiError("ANALYSIS_FAILED", err instanceof Error ? err.message : "Analysis failed", 500);
+}
 
 export async function runAnalysis(req: AnalysisJobRequest): Promise<AIAnalysisResponse> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not set");
+    throw createEdgeAiError("AI_NOT_CONFIGURED", "AI features are not available right now.", 503);
   }
 
   const openai = new OpenAI({ apiKey });
   const modelId = getModelForJob(req.paradigm, req.model_profile);
   const startedAt = new Date().toISOString();
+  const reasoning = isReasoningModel(modelId);
+  const reasoningEffort = reasoning ? getReasoningEffort(req.model_profile) : null;
 
   console.log(`[run-analysis-job] ${req.paradigm}/${req.model_profile} → ${modelId}`);
 
-  const systemPrompt = `${SYSTEM_PROMPT_TEMPLATE}\n\nExpected response structure:\n${JSON.stringify(buildExpectedEnvelope(req), null, 2)}`;
+  const systemPrompt =
+    `${SYSTEM_PROMPT_TEMPLATE}\n\nExpected response structure:\n${JSON.stringify(buildExpectedEnvelope(req), null, 2)}`;
   const userPrompt = buildUserPrompt(req);
 
-  // ── OpenAI call with retry ───────────────────────────────────────────────
-  const completion = await withRetry(
-    () =>
-      openai.chat.completions.create({
-        model: modelId,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-        temperature: req.model_profile === "deep" ? 0.3 : 0.2,
-      }),
-    `${req.paradigm}/${req.model_profile}`,
-  );
+  let completion;
+  try {
+    const completionParams: Record<string, unknown> = {
+      model: modelId,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+      temperature: reasoning ? 1 : req.model_profile === "deep" ? 0.3 : 0.2,
+    };
+
+    if (reasoningEffort) {
+      completionParams.reasoning_effort = reasoningEffort;
+    }
+
+    completion = await withRetry(
+      () =>
+        openai.chat.completions.create(
+          completionParams as OpenAI.ChatCompletionCreateParamsNonStreaming,
+          { timeout: ANALYSIS_TIMEOUT_MS, maxRetries: 0 },
+        ),
+      `${req.paradigm}/${req.model_profile}`,
+    );
+  } catch (err) {
+    throw classifyOpenAiError(err);
+  }
 
   const choice = completion.choices[0];
   if (!choice?.message?.content) {
-    const emptyErr = new Error("OpenAI returned empty response") as Error & { errorCode?: string };
-    emptyErr.errorCode = "empty_response";
-    throw emptyErr;
+    throw createEdgeAiError("ANALYSIS_FAILED", "OpenAI returned empty response", 500);
   }
 
-  // ── Parse JSON ───────────────────────────────────────────────────────────
   let parsed: unknown;
   try {
     parsed = JSON.parse(choice.message.content);
   } catch {
-    const parseErr = new Error("OpenAI response is not valid JSON") as Error & { errorCode?: string };
-    parseErr.errorCode = "parse_error";
-    throw parseErr;
+    throw createEdgeAiError("ANALYSIS_FAILED", "OpenAI response is not valid JSON", 500);
   }
 
-  // ── Validate envelope — progressive (warn, not hard-fail) ───────────────
   const validationWarnings: string[] = [];
-
-  if (!validateEnvelope(parsed)) {
+  const envelopeValidation = validateEnvelopeWithReason(parsed);
+  if (!envelopeValidation.valid) {
     const raw = parsed as Record<string, unknown>;
-    const hasSummary = typeof raw?.summary === "string" && (raw.summary as string).length > 0;
+    const hasSummary = typeof raw?.summary === "string" && raw.summary.length > 0;
     const hasResults = typeof raw?.results === "object" && raw.results !== null;
 
     if (!hasSummary || !hasResults) {
-      // Truly unrecoverable — no usable output
-      const schemaErr = new Error(
-        "OpenAI response is missing required summary or results"
-      ) as Error & { errorCode?: string };
-      schemaErr.errorCode = "schema_error";
-      throw schemaErr;
+      throw createEdgeAiError(
+        "ANALYSIS_FAILED",
+        `OpenAI response is missing required summary or results: ${envelopeValidation.reason}`,
+        500,
+      );
     }
 
-    // Has core content but failed other field checks — continue as partial
-    validationWarnings.push("envelope_validation_failed");
+    validationWarnings.push(`envelope_validation_failed:${envelopeValidation.reason}`);
     console.warn(
-      `[run-analysis-job] VALIDATION WARNING: envelope check failed for ${req.paradigm}. Returning partial result.`
+      `[run-analysis-job] VALIDATION WARNING: envelope check failed for ${req.paradigm}: ${envelopeValidation.reason}. Returning partial result.`,
     );
   }
 
-  // ── Strategic schema — progressive (warn, not hard-fail) ────────────────
   if (req.paradigm === "STRATEGIC_BID_INTELLIGENCE") {
     const validation = validateStrategicResultsWithReason((parsed as AIAnalysisResponse).results);
     if (!validation.valid) {
-      validationWarnings.push("strategic_schema_mismatch");
+      validationWarnings.push(`strategic_schema_mismatch:${validation.reason}`);
       console.warn(
-        `[run-analysis-job] VALIDATION WARNING: strategic schema mismatch (${validation.reason}). Returning partial result.`
+        `[run-analysis-job] VALIDATION WARNING: strategic schema mismatch for ${req.paradigm}: ${validation.reason}. Returning partial result.`,
       );
-      // Attach raw_results for the UI to inspect if it needs to
-      (parsed as Record<string, unknown>)._raw_strategic_results = validation.rawResults;
     }
   }
 
-  // ── Build response ───────────────────────────────────────────────────────
   const response = parsed as AIAnalysisResponse;
   const completedAt = new Date().toISOString();
   const latencyMs = Math.round(
-    new Date(completedAt).getTime() - new Date(startedAt).getTime()
+    new Date(completedAt).getTime() - new Date(startedAt).getTime(),
   );
 
   const inputTokens = completion.usage?.prompt_tokens ?? 0;
@@ -183,12 +225,13 @@ export async function runAnalysis(req: AnalysisJobRequest): Promise<AIAnalysisRe
     provider: "openai",
     model_id: modelId,
     model_profile: req.model_profile,
-    temperature: req.model_profile === "deep" ? 0.3 : 0.2,
+    temperature: reasoning ? 1 : req.model_profile === "deep" ? 0.3 : 0.2,
+    reasoning_effort: reasoningEffort,
   };
 
   if (validationWarnings.length > 0) {
     response.status = "partial";
-    (response as unknown as Record<string, unknown>).validation_warnings = validationWarnings;
+    response.validation_warnings = validationWarnings;
   }
 
   return response;

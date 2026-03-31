@@ -5,6 +5,32 @@
 import type { AIAnalysisResponse, StrategicBidIntelligenceResults } from "./types";
 import type { AgentResponseBlock } from "@/lib/chat/types";
 
+function normalizeDecisionState(value: unknown): "Green" | "Amber" | "Red" | undefined {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "green") return "Green";
+  if (normalized === "amber") return "Amber";
+  if (normalized === "red") return "Red";
+  return undefined;
+}
+
+function normalizeRecommendation(value: unknown): "Bid" | "Research" | "No Bid" | undefined {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "bid") return "Bid";
+  if (normalized === "research") return "Research";
+  if (normalized === "no bid") return "No Bid";
+  return undefined;
+}
+
+function normalizeDimensionStatus(value: unknown): "strong" | "mixed" | "weak" | "unknown" | undefined {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "positive") return "strong";
+  if (normalized === "negative") return "weak";
+  if (normalized === "strong" || normalized === "mixed" || normalized === "weak" || normalized === "unknown") {
+    return normalized;
+  }
+  return undefined;
+}
+
 /** Format AI response into chat blocks. Uses summary + structured results. */
 export function aiResponseToBlocks(
   response: AIAnalysisResponse,
@@ -35,20 +61,23 @@ export function aiResponseToBlocks(
       rationale?: string[];
     };
     if (decision.decision_state || decision.recommendation) {
+      const decisionState = normalizeDecisionState(decision.decision_state);
+      const recommendation = normalizeRecommendation(decision.recommendation);
       blocks.push({
         type: "decision_signal",
-        content: `${decision.decision_state ?? "Unknown"}${decision.recommendation ? ` (${decision.recommendation})` : ""}`,
-        decisionState: decision.decision_state as "Green" | "Amber" | "Red" | undefined,
-        recommendation: decision.recommendation as "Bid" | "Research" | "No Bid" | undefined,
+        content: `${decisionState ?? String(decision.decision_state ?? "Unknown")}${recommendation ? ` (${recommendation})` : ""}`,
+        decisionState,
+        recommendation,
         confidence: typeof decision.confidence === "number" ? decision.confidence : undefined,
         decisionSummary: decision.decision_summary,
         dimensions: dimensionLabels
           .map(([key, label]) => {
             const value = results?.[key] as
-              | { score?: number; status?: "strong" | "mixed" | "weak" | "unknown" }
+              | { score?: number; status?: string }
               | undefined;
-            if (!value || typeof value.score !== "number" || !value.status) return null;
-            return { label, score: value.score, status: value.status };
+            const status = normalizeDimensionStatus(value?.status);
+            if (!value || typeof value.score !== "number" || !status) return null;
+            return { label, score: value.score, status };
           })
           .filter((value): value is NonNullable<typeof value> => value !== null),
         blockers: Array.isArray(results?.decision_blockers) ? results.decision_blockers : [],

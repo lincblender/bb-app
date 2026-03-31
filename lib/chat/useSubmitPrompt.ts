@@ -14,6 +14,7 @@ import { getSetupPillarStatuses } from "@/lib/connectors/setup-status";
 interface FetchAiChatResult {
   blocks: AgentResponseBlock[] | null;
   error: string | null;
+  code: "AI_NOT_CONFIGURED" | "INVALID_REQUEST" | "RATE_LIMITED" | "ANALYSIS_FAILED" | "TIMEOUT" | "UNAUTHORIZED" | null;
 }
 
 async function fetchAiChatBlocks(
@@ -32,6 +33,10 @@ async function fetchAiChatBlocks(
     if (!res.ok) {
       return {
         blocks: null,
+        code:
+          typeof data?.code === "string"
+            ? data.code
+            : null,
         error:
           typeof data?.error === "string" ? data.error : `AI request failed with status ${res.status}.`,
       };
@@ -40,17 +45,20 @@ async function fetchAiChatBlocks(
     if (!Array.isArray(data?.blocks)) {
       return {
         blocks: null,
+        code: null,
         error: "AI returned no structured blocks.",
       };
     }
 
     return {
       blocks: data.blocks as AgentResponseBlock[],
+      code: null,
       error: null,
     };
   } catch (error) {
     return {
       blocks: null,
+      code: null,
       error: error instanceof Error ? error.message : "AI request failed.",
     };
   }
@@ -108,12 +116,27 @@ function buildAttachmentGuardrailBlocks(
   ];
 }
 
-function buildAiUnavailableBlocks(error?: string | null): AgentResponseBlock[] {
+function buildAiUnavailableBlocks(
+  error?: string | null,
+  code?: FetchAiChatResult["code"],
+): AgentResponseBlock[] {
+  const primaryMessage =
+    code === "AI_NOT_CONFIGURED"
+      ? "AI features are not available right now."
+      : code === "RATE_LIMITED"
+        ? "You've reached the AI analysis limit. Try again in a moment."
+        : code === "TIMEOUT"
+          ? "Analysis took too long. Try a simpler query or fewer attachments."
+          : code === "UNAUTHORIZED"
+            ? "Your session is missing workspace access for AI analysis."
+            : code === "INVALID_REQUEST"
+              ? "The analysis request was invalid."
+              : "Whoops! It looks like there was a problem with the AI engine. Please reach out to support@bidblender.com.au for assistance.";
+
   return [
     {
       type: "text",
-      content:
-        "Whoops! It looks like there was a problem with the AI engine. Please reach out to support@bidblender.com.au for assistance.",
+      content: primaryMessage,
     },
     {
       type: "text",
@@ -391,7 +414,7 @@ export function useSubmitPrompt() {
           aiResult.blocks ??
           (attachments.length > 0
             ? buildAttachmentGuardrailBlocks(attachments, "analysis_unavailable")
-            : buildAiUnavailableBlocks(aiResult.error));
+            : buildAiUnavailableBlocks(aiResult.error, aiResult.code));
       }
 
       const textBlocks = blocks.filter((b) => b.type === "text");

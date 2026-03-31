@@ -166,6 +166,7 @@ export interface AIAnalysisResponse {
   };
   recommendations?: { code: string; priority: string; action: string }[];
   warnings?: string[];
+  validation_warnings?: string[];
   errors?: { code: string; message: string; detail?: string | null }[];
 }
 

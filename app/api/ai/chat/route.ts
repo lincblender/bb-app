@@ -37,6 +37,22 @@ function errorResponse(
   return NextResponse.json({ error: message, code, blocks: null }, { status });
 }
 
+function errorResponseFromError(err: unknown) {
+  if (err && typeof err === "object" && "code" in err && "status" in err) {
+    const code = (err as { code: AiErrorCode }).code;
+    const status = (err as { status: number }).status;
+    const message = err instanceof Error ? err.message : "Analysis failed";
+    return errorResponse(code, message, status);
+  }
+
+  const message = err instanceof Error ? err.message : "Analysis failed";
+  if (message.toLowerCase().includes("timeout") || message.toLowerCase().includes("timed out")) {
+    return errorResponse("TIMEOUT", "Analysis took too long. Try a simpler query or fewer attachments.", 504);
+  }
+
+  return errorResponse("ANALYSIS_FAILED", "Analysis failed. Your data was not affected.", 500);
+}
+
 export async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
     return errorResponse("AI_NOT_CONFIGURED", "AI features are not available right now.", 503);
@@ -54,10 +70,7 @@ export async function POST(request: Request) {
     const primaryOppId = opportunityIds[0] ?? null;
 
     if (!message) {
-      return NextResponse.json(
-        { error: "message is required", blocks: null },
-        { status: 400 }
-      );
+      return errorResponse("INVALID_REQUEST", "message is required", 400);
     }
 
     const [tenantId, tenantData] = await Promise.all([
@@ -162,19 +175,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ blocks });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Analysis failed";
-
-    // Rate limit — retries exhausted
-    if (err && typeof err === "object" && "status" in err && (err as { status: number }).status === 429) {
-      return errorResponse("RATE_LIMITED", "You've reached the AI analysis limit. Try again in a moment.", 429);
-    }
-
-    // Timeout
-    if (message.toLowerCase().includes("timeout") || message.toLowerCase().includes("timed out")) {
-      return errorResponse("TIMEOUT", "Analysis took too long. Try a simpler query or fewer attachments.", 504);
-    }
-
-    // General analysis failure
-    return errorResponse("ANALYSIS_FAILED", "Analysis failed. Your data was not affected.", 500);
+    return errorResponseFromError(err);
   }
 }

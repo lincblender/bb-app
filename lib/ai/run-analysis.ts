@@ -26,12 +26,66 @@ import {
   extractErrorCode,
 } from "./rate-limit";
 
+const ANALYSIS_TIMEOUT_MS = 30_000;
+
+export type AiErrorCode =
+  | "AI_NOT_CONFIGURED"
+  | "UNAUTHORIZED"
+  | "INVALID_REQUEST"
+  | "RATE_LIMITED"
+  | "ANALYSIS_FAILED"
+  | "TIMEOUT";
+
+type AiError = Error & {
+  code: AiErrorCode;
+  status: number;
+  rawResults?: unknown;
+  retryAfterSeconds?: number;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Retry helper
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** OpenAI status codes that are worth retrying (transient). */
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+type StrategicValidationResult =
+  | { valid: true }
+  | { valid: false; reason: string };
+
+type EnvelopeValidationResult =
+  | { valid: true }
+  | { valid: false; reason: string };
+
+function createAiError(
+  code: AiErrorCode,
+  message: string,
+  status: number,
+  extra?: { rawResults?: unknown; retryAfterSeconds?: number },
+): AiError {
+  const error = new Error(message) as AiError;
+  error.code = code;
+  error.status = status;
+  if (extra?.rawResults !== undefined) {
+    error.rawResults = extra.rawResults;
+  }
+  if (extra?.retryAfterSeconds !== undefined) {
+    error.retryAfterSeconds = extra.retryAfterSeconds;
+  }
+  return error;
+}
+
+function isAiErrorCode(value: unknown): value is AiErrorCode {
+  return (
+    value === "AI_NOT_CONFIGURED" ||
+    value === "UNAUTHORIZED" ||
+    value === "INVALID_REQUEST" ||
+    value === "RATE_LIMITED" ||
+    value === "ANALYSIS_FAILED" ||
+    value === "TIMEOUT"
+  );
+}
 
 /**
  * Determines if an OpenAI SDK error is transiently retryable.
@@ -46,6 +100,24 @@ function isRetryable(err: unknown): boolean {
     return true;
   }
   return false;
+}
+
+function isTimeoutError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const message = `${err.name} ${err.message}`.toLowerCase();
+  return message.includes("timeout") || message.includes("timed out") || message.includes("abort");
+}
+
+function isInvokeTimeoutError(err: unknown): boolean {
+  if (isTimeoutError(err)) return true;
+  if (err && typeof err === "object" && "context" in err) {
+    return isTimeoutError((err as { context?: unknown }).context);
+  }
+  return false;
+}
+
+function shouldFallbackFromEdgeError(err: unknown): boolean {
+  return err instanceof Error && (err.name === "FunctionsFetchError" || err.name === "FunctionsRelayError");
 }
 
 /**
@@ -138,18 +210,26 @@ function buildUserPrompt(req: AnalysisJobRequest): string {
 }
 
 function validateStrategicResults(results: unknown): boolean {
-  if (!results || typeof results !== "object") return false;
+  return validateStrategicResultsWithReason(results).valid;
+}
+
+function validateStrategicResultsWithReason(results: unknown): StrategicValidationResult {
+  if (!results || typeof results !== "object") return { valid: false, reason: "results is not an object" };
   const strategic = results as StrategicBidIntelligenceResults & Record<string, unknown>;
   const decision = strategic.bid_decision as Record<string, unknown> | undefined;
-  if (!decision || typeof decision !== "object") return false;
+  if (!decision || typeof decision !== "object") return { valid: false, reason: "bid_decision missing or not object" };
 
   const decisionState = decision.decision_state;
   const recommendation = decision.recommendation;
   const confidence = decision.confidence;
 
-  if (!["Green", "Amber", "Red"].includes(String(decisionState))) return false;
-  if (!["Bid", "Research", "No Bid"].includes(String(recommendation))) return false;
-  if (typeof confidence !== "number") return false;
+  if (!["Green", "Amber", "Red"].includes(String(decisionState))) {
+    return { valid: false, reason: `decision_state invalid: "${String(decisionState)}"` };
+  }
+  if (!["Bid", "Research", "No Bid"].includes(String(recommendation))) {
+    return { valid: false, reason: `recommendation invalid: "${String(recommendation)}"` };
+  }
+  if (typeof confidence !== "number") return { valid: false, reason: `confidence not number: ${typeof confidence}` };
 
   const requiredDimensions = [
     "pursuit_capacity",
@@ -161,18 +241,24 @@ function validateStrategicResults(results: unknown): boolean {
 
   for (const key of requiredDimensions) {
     const value = strategic[key];
-    if (!value || typeof value !== "object") return false;
+    if (!value || typeof value !== "object") return { valid: false, reason: `${key} missing or not object` };
     const dimension = value as Record<string, unknown>;
-    if (typeof dimension.score !== "number") return false;
-    if (!["strong", "mixed", "weak", "unknown"].includes(String(dimension.status))) return false;
-    if (typeof dimension.summary !== "string" || dimension.summary.length === 0) return false;
+    if (typeof dimension.score !== "number") return { valid: false, reason: `${key}.score not number` };
+    if (!["strong", "mixed", "weak", "unknown"].includes(String(dimension.status))) {
+      return { valid: false, reason: `${key}.status invalid: "${String(dimension.status)}"` };
+    }
+    if (typeof dimension.summary !== "string" || dimension.summary.length === 0) {
+      return { valid: false, reason: `${key}.summary must be a non-empty string` };
+    }
   }
 
-  if (!Array.isArray(strategic.decision_blockers)) return false;
-  if (!Array.isArray(strategic.decision_movers)) return false;
-  if (!Array.isArray(strategic.recommended_research_actions)) return false;
+  if (!Array.isArray(strategic.decision_blockers)) return { valid: false, reason: "decision_blockers not array" };
+  if (!Array.isArray(strategic.decision_movers)) return { valid: false, reason: "decision_movers not array" };
+  if (!Array.isArray(strategic.recommended_research_actions)) {
+    return { valid: false, reason: "recommended_research_actions not array" };
+  }
 
-  return true;
+  return { valid: true };
 }
 
 /** Build the minimal envelope for the AI to fill - we inject job_id etc after */
@@ -232,7 +318,11 @@ function buildExpectedEnvelope(req: AnalysisJobRequest, selection: ModelSelectio
 
 /** Validate response has required envelope fields */
 function validateEnvelope(obj: unknown): obj is AIAnalysisResponse {
-  if (!obj || typeof obj !== "object") return false;
+  return validateEnvelopeWithReason(obj).valid;
+}
+
+function validateEnvelopeWithReason(obj: unknown): EnvelopeValidationResult {
+  if (!obj || typeof obj !== "object") return { valid: false, reason: "response is not an object" };
   const o = obj as Record<string, unknown>;
   const required = [
     "schema_version",
@@ -252,23 +342,32 @@ function validateEnvelope(obj: unknown): obj is AIAnalysisResponse {
     "timestamps",
   ];
   for (const k of required) {
-    if (!(k in o)) return false;
+    if (!(k in o)) return { valid: false, reason: `missing required field: ${k}` };
   }
-  if (typeof o.summary !== "string" || o.summary.length === 0) return false;
-  if (!Array.isArray(o.evidence)) return false;
-  if (!Array.isArray(o.missing_data)) return false;
-  if (typeof o.results !== "object" || o.results === null) return false;
+  if (typeof o.summary !== "string" || o.summary.length === 0) {
+    return { valid: false, reason: "summary must be a non-empty string" };
+  }
+  if (!Array.isArray(o.evidence)) return { valid: false, reason: "evidence must be an array" };
+  if (!Array.isArray(o.missing_data)) return { valid: false, reason: "missing_data must be an array" };
+  if (typeof o.results !== "object" || o.results === null) {
+    return { valid: false, reason: "results must be an object" };
+  }
   const model = o.model as Record<string, unknown>;
-  if (!model || typeof model !== "object") return false;
-  if (typeof model.provider !== "string" || typeof model.model_id !== "string") return false;
+  if (!model || typeof model !== "object") return { valid: false, reason: "model must be an object" };
+  if (typeof model.provider !== "string" || typeof model.model_id !== "string") {
+    return { valid: false, reason: "model.provider and model.model_id must be strings" };
+  }
   const usage = o.usage as Record<string, unknown>;
-  if (!usage || typeof usage !== "object") return false;
-  if (typeof usage.input_tokens !== "number" || typeof usage.output_tokens !== "number") return false;
+  if (!usage || typeof usage !== "object") return { valid: false, reason: "usage must be an object" };
+  if (typeof usage.input_tokens !== "number" || typeof usage.output_tokens !== "number") {
+    return { valid: false, reason: "usage.input_tokens and usage.output_tokens must be numbers" };
+  }
   const timestamps = o.timestamps as Record<string, unknown>;
-  if (!timestamps || typeof timestamps !== "object") return false;
-  if (typeof timestamps.started_at !== "string" || typeof timestamps.completed_at !== "string")
-    return false;
-  return true;
+  if (!timestamps || typeof timestamps !== "object") return { valid: false, reason: "timestamps must be an object" };
+  if (typeof timestamps.started_at !== "string" || typeof timestamps.completed_at !== "string") {
+    return { valid: false, reason: "timestamps.started_at and timestamps.completed_at must be strings" };
+  }
+  return { valid: true };
 }
 
 // Cost estimation now uses the model registry via estimateModelCost from model-router.ts
@@ -300,14 +399,12 @@ export async function runAnalysisJob(
     // ── Rate limit check ───────────────────────────────────────────────────
     const rateLimit = await checkAnalysisRateLimit(supabase, req.tenant_id);
     if (!rateLimit.allowed) {
-      const err = Object.assign(
-        new Error(
-          `Analysis rate limit reached (${rateLimit.used}/${rateLimit.limit} jobs this hour). ` +
-          `Try again in ${rateLimit.retryAfterSeconds ?? 60}s.`
-        ),
-        { error_code: "rate_limited", retryAfterSeconds: rateLimit.retryAfterSeconds }
+      throw createAiError(
+        "RATE_LIMITED",
+        `Analysis rate limit reached (${rateLimit.used}/${rateLimit.limit} jobs this hour). Try again in ${rateLimit.retryAfterSeconds ?? 60}s.`,
+        429,
+        { retryAfterSeconds: rateLimit.retryAfterSeconds },
       );
-      throw err;
     }
 
     // ── Call edge function ─────────────────────────────────────────────────
@@ -315,14 +412,32 @@ export async function runAnalysisJob(
     let edgeError: unknown = null;
 
     try {
-      const { data, error } = await supabase.functions.invoke("run-analysis-job", {
+      const { data, error, response: edgeResponse } = await supabase.functions.invoke("run-analysis-job", {
         body: req,
+        timeout: ANALYSIS_TIMEOUT_MS,
       });
-      if (error) throw error;
+      if (error) {
+        if (edgeResponse) {
+          const edgeBody = await edgeResponse.clone().json().catch(() => null) as Record<string, unknown> | null;
+          const code = isAiErrorCode(edgeBody?.code) ? edgeBody.code : "ANALYSIS_FAILED";
+          throw createAiError(
+            code,
+            typeof edgeBody?.error === "string" ? edgeBody.error : `Edge analysis failed with status ${edgeResponse.status}`,
+            edgeResponse.status,
+            { rawResults: edgeBody?.raw_results },
+          );
+        }
+        if (isInvokeTimeoutError(error)) {
+          throw createAiError("TIMEOUT", "Analysis took too long. Try a simpler query or fewer attachments.", 504);
+        }
+        throw error;
+      }
       response = data as AIAnalysisResponse;
     } catch (err) {
       edgeError = err;
-      console.error("Supabase Edge Function 'run-analysis-job' failed. Falling back to local execution:", err);
+      if (shouldFallbackFromEdgeError(err)) {
+        console.error("Supabase Edge Function 'run-analysis-job' failed. Falling back to local execution:", err);
+      }
     }
 
     // ── Log job (success or edge-function failure) ─────────────────────────
@@ -356,18 +471,15 @@ export async function runAnalysisJob(
         errorCode: code,
         latencyMs: Date.now() - jobStart,
       });
-      // Only fall through to local execution on transient/unknown errors.
-      // Hard errors (rate_limited, auth_error) should propagate immediately.
-      if (code === "rate_limited" || code === "model_overloaded" || code === "auth_error" || code === "quota_exceeded") {
+      if (!shouldFallbackFromEdgeError(edgeError)) {
         throw edgeError;
       }
-      // Transient / unknown → fall through to local execution below
     }
   }
 
   const apiKey = options?.apiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not set");
+    throw createAiError("AI_NOT_CONFIGURED", "AI features are not available right now.", 503);
   }
 
   const localJobStart = Date.now();
@@ -410,10 +522,28 @@ export async function runAnalysisJob(
     completionParams.temperature = selection.temperature;
   }
 
-  const completion = await withRetry(
-    () => openai.chat.completions.create(completionParams),
-    `${req.paradigm}/${req.model_profile}`,
-  );
+  let completion;
+  try {
+    completion = await withRetry(
+      () =>
+        openai.chat.completions.create(completionParams, {
+          timeout: ANALYSIS_TIMEOUT_MS,
+          maxRetries: 0,
+        }),
+      `${req.paradigm}/${req.model_profile}`,
+    );
+  } catch (err) {
+    if (isTimeoutError(err)) {
+      throw createAiError("TIMEOUT", "Analysis took too long. Try a simpler query or fewer attachments.", 504);
+    }
+    if (err && typeof err === "object" && "status" in err && (err as { status: number }).status === 429) {
+      throw createAiError("RATE_LIMITED", "You've reached the AI analysis limit. Try again in a moment.", 429);
+    }
+    if (err && typeof err === "object" && "status" in err && (err as { status: number }).status === 401) {
+      throw createAiError("AI_NOT_CONFIGURED", "AI features are not available right now.", 503);
+    }
+    throw createAiError("ANALYSIS_FAILED", err instanceof Error ? err.message : "Analysis failed", 500);
+  }
 
   const choice = completion.choices[0];
   if (!choice?.message?.content) {
@@ -431,25 +561,35 @@ export async function runAnalysisJob(
   const validationWarnings: string[] = [];
 
   // Genuinely unusable: no parseable content at all
-  if (!validateEnvelope(parsed)) {
+  const envelopeValidation = validateEnvelopeWithReason(parsed);
+  if (!envelopeValidation.valid) {
     const raw = parsed as Record<string, unknown>;
     const hasSummary = typeof raw?.summary === "string" && (raw.summary as string).length > 0;
     const hasResults = typeof raw?.results === "object" && raw.results !== null;
 
     if (!hasSummary || !hasResults) {
-      throw new Error("OpenAI response is missing required summary or results — cannot produce a useful output");
+      throw createAiError(
+        "ANALYSIS_FAILED",
+        `OpenAI response is missing required summary or results: ${envelopeValidation.reason}`,
+        500,
+      );
     }
 
     // Has core content but failed other field checks — continue as partial
-    validationWarnings.push("envelope_validation_failed");
-    console.warn(`[run-analysis] VALIDATION WARNING: envelope check failed for ${req.paradigm}. Returning partial result.`);
+    validationWarnings.push(`envelope_validation_failed:${envelopeValidation.reason}`);
+    console.warn(
+      `[run-analysis] VALIDATION WARNING: envelope check failed for ${req.paradigm}: ${envelopeValidation.reason}. Returning partial result.`,
+    );
   }
 
   // ── Strategic validator ─────────────────────────────────────────────────────────
   if (req.paradigm === "STRATEGIC_BID_INTELLIGENCE") {
-    if (!validateStrategicResults((parsed as AIAnalysisResponse).results)) {
-      validationWarnings.push("strategic_schema_mismatch");
-      console.warn(`[run-analysis] VALIDATION WARNING: strategic result schema mismatch for ${req.paradigm}. Returning partial result.`);
+    const strategicValidation = validateStrategicResultsWithReason((parsed as AIAnalysisResponse).results);
+    if (!strategicValidation.valid) {
+      validationWarnings.push(`strategic_schema_mismatch:${strategicValidation.reason}`);
+      console.warn(
+        `[run-analysis] VALIDATION WARNING: strategic result schema mismatch for ${req.paradigm}: ${strategicValidation.reason}. Returning partial result.`,
+      );
     }
   }
 

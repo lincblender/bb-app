@@ -161,6 +161,15 @@ export function extractErrorCode(err: unknown): AnalysisErrorCode {
     return (err as { error_code: AnalysisErrorCode }).error_code ?? "unknown";
   }
 
+  if (typeof err === "object" && err !== null && "code" in err) {
+    const code = (err as { code?: string }).code;
+    if (code === "RATE_LIMITED") return "rate_limited";
+    if (code === "AI_NOT_CONFIGURED") return "auth_error";
+    if (code === "INVALID_REQUEST") return "request_invalid";
+    if (code === "TIMEOUT") return "request_timeout";
+    if (code === "ANALYSIS_FAILED") return "unknown";
+  }
+
   // Supabase FunctionsHttpError — body may be JSON
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
