@@ -51,28 +51,28 @@ ALTER TABLE opportunity_addenda ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tenant_addenda_select" ON opportunity_addenda
   FOR SELECT USING (
     tenant_id IN (
-      SELECT tenant_id FROM profiles WHERE user_id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()::text
     )
   );
 
 CREATE POLICY "tenant_addenda_insert" ON opportunity_addenda
   FOR INSERT WITH CHECK (
     tenant_id IN (
-      SELECT tenant_id FROM profiles WHERE user_id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()::text
     )
   );
 
 CREATE POLICY "tenant_addenda_update" ON opportunity_addenda
   FOR UPDATE USING (
     tenant_id IN (
-      SELECT tenant_id FROM profiles WHERE user_id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()::text
     )
   );
 
 CREATE POLICY "tenant_addenda_delete" ON opportunity_addenda
   FOR DELETE USING (
     tenant_id IN (
-      SELECT tenant_id FROM profiles WHERE user_id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()::text
     )
   );
 
@@ -103,27 +103,27 @@ ALTER TABLE opportunity_documents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tenant_documents_select" ON opportunity_documents
   FOR SELECT USING (
     tenant_id IN (
-      SELECT tenant_id FROM profiles WHERE user_id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()::text
     )
   );
 
 CREATE POLICY "tenant_documents_insert" ON opportunity_documents
   FOR INSERT WITH CHECK (
     tenant_id IN (
-      SELECT tenant_id FROM profiles WHERE user_id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()::text
     )
   );
 
 CREATE POLICY "tenant_documents_update" ON opportunity_documents
   FOR UPDATE USING (
     tenant_id IN (
-      SELECT tenant_id FROM profiles WHERE user_id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()::text
     )
   );
 
 CREATE POLICY "tenant_documents_delete" ON opportunity_documents
   FOR DELETE USING (
     tenant_id IN (
-      SELECT tenant_id FROM profiles WHERE user_id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()::text
     )
   );

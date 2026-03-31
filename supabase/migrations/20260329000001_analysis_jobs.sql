@@ -38,7 +38,7 @@ ALTER TABLE analysis_jobs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tenant_analysis_jobs_select" ON analysis_jobs
   FOR SELECT USING (
     tenant_id IN (
-      SELECT tenant_id FROM profiles WHERE user_id = auth.uid()
+      SELECT tenant_id FROM profiles WHERE id = auth.uid()::text
     )
   );
 
