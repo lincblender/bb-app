@@ -1,3 +1,19 @@
+export interface UnspscCode {
+  /** 8-digit UNSPSC commodity code, e.g. "43230000" */
+  code: string;
+  /** Human description, e.g. "Software" */
+  description: string;
+  /** "stated" = directly mentioned on website; "inferred" = AI-inferred */
+  confidence?: "stated" | "inferred";
+}
+
+export interface GovernmentPanel {
+  name: string;
+  jurisdiction: string;
+  /** "confirmed" = site mentions it; "likely" = AI inference */
+  status: "confirmed" | "likely";
+}
+
 export interface Organisation {
   id: string;
   name: string;
@@ -16,6 +32,12 @@ export interface Organisation {
   strategicPreferences: string[];
   targetMarkets: string[];
   partnerGaps: string[];
+  // Government procurement intelligence (populated by AI website inference)
+  unspscCodes?: UnspscCode[];
+  anzsicCode?: string | null;
+  governmentPanels?: GovernmentPanel[];
+  operatingRegions?: string[];
+  tenderKeywords?: string[];
 }
 
 export interface Capability {

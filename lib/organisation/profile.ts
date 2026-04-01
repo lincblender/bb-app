@@ -83,6 +83,18 @@ function normaliseDateString(value: string) {
   return Number.isNaN(parsed.getTime()) ? trimmed : parsed.toISOString();
 }
 
+const unspscCodeSchema = z.object({
+  code: z.string().trim().default(""),
+  description: z.string().trim().default(""),
+  confidence: z.enum(["stated", "inferred"]).optional(),
+});
+
+const governmentPanelSchema = z.object({
+  name: z.string().trim().default(""),
+  jurisdiction: z.string().trim().default(""),
+  status: z.enum(["confirmed", "likely"]).default("likely"),
+});
+
 export const organisationProfileSaveSchema = z.object({
   id: z.string().optional().nullable(),
   name: z.string().trim().min(1, "Organisation name is required."),
@@ -100,6 +112,12 @@ export const organisationProfileSaveSchema = z.object({
   strategicPreferences: z.array(z.string()).default([]),
   targetMarkets: z.array(z.string()).default([]),
   partnerGaps: z.array(z.string()).default([]),
+  // Government procurement intelligence
+  unspscCodes: z.array(unspscCodeSchema).default([]),
+  anzsicCode: z.string().trim().nullable().default(null),
+  governmentPanels: z.array(governmentPanelSchema).default([]),
+  operatingRegions: z.array(z.string()).default([]),
+  tenderKeywords: z.array(z.string()).default([]),
 });
 
 export const organisationProfileSearchSchema = z.object({
@@ -180,6 +198,11 @@ export function createEmptyOrganisationProfile(): OrganisationProfileSaveInput {
     strategicPreferences: [],
     targetMarkets: [],
     partnerGaps: [],
+    unspscCodes: [],
+    anzsicCode: null,
+    governmentPanels: [],
+    operatingRegions: [],
+    tenderKeywords: [],
   };
 }
 
@@ -218,6 +241,11 @@ export function mapOrganisationToProfile(organisation: Organisation | null | und
     strategicPreferences: organisation.strategicPreferences ?? [],
     targetMarkets: organisation.targetMarkets ?? [],
     partnerGaps: organisation.partnerGaps ?? [],
+    unspscCodes: organisation.unspscCodes ?? [],
+    anzsicCode: organisation.anzsicCode ?? null,
+    governmentPanels: organisation.governmentPanels ?? [],
+    operatingRegions: organisation.operatingRegions ?? [],
+    tenderKeywords: organisation.tenderKeywords ?? [],
   };
 }
 
@@ -317,6 +345,12 @@ export function normaliseOrganisationProfileInput(input: OrganisationProfileSave
     strategicPreferences: normaliseStringList(input.strategicPreferences),
     targetMarkets: normaliseStringList(input.targetMarkets),
     partnerGaps: normaliseStringList(input.partnerGaps),
+    // Government procurement intelligence — passed through as-is
+    unspscCodes: input.unspscCodes ?? [],
+    anzsicCode: input.anzsicCode ?? null,
+    governmentPanels: input.governmentPanels ?? [],
+    operatingRegions: normaliseStringList(input.operatingRegions ?? []),
+    tenderKeywords: normaliseStringList(input.tenderKeywords ?? []),
   };
 }
 

@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
   profileAi: "/api/organisation/profile/ai",
   profileAiSearch: "/api/organisation/profile/ai/search",
   profileAiSocialSearch: "/api/organisation/profile/ai/social-search",
+  profileAiInferFromWebsite: "/api/organisation/profile/ai/infer-from-website",
 } as const;
 
 /** Section content */

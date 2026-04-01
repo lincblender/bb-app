@@ -106,6 +106,12 @@ export function mapOrganisationRow(
     strategicPreferences: (row.strategic_preferences as string[]) ?? [],
     targetMarkets: (row.target_markets as string[]) ?? [],
     partnerGaps: (row.partner_gaps as string[]) ?? [],
+    // Government procurement intelligence
+    unspscCodes: (row.unspsc_codes as Organisation["unspscCodes"]) ?? [],
+    anzsicCode: (row.anzsic_code as string | null | undefined) ?? null,
+    governmentPanels: (row.government_panels as Organisation["governmentPanels"]) ?? [],
+    operatingRegions: (row.operating_regions as string[]) ?? [],
+    tenderKeywords: (row.tender_keywords as string[]) ?? [],
   };
 }
 

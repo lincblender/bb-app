@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, ArrowRight, RefreshCw, Save, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, RefreshCw, Save, Sparkles, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useWorkspaceData } from "@/lib/workspace/client";
 import {
@@ -25,6 +25,10 @@ import {
 } from "./constants";
 import { OrganisationAiLookupDialog } from "./OrganisationAiLookupDialog";
 import { OrganisationProfileSnapshot } from "./OrganisationProfileSnapshot";
+import {
+  WebsiteInferenceLoadingScreen,
+  WebsiteInferenceDialog,
+} from "./WebsiteInferenceDialog";
 
 function formatUnsavedChanges(count: number) {
   if (count <= 0) {
@@ -285,11 +289,28 @@ export default function OrganisationPage() {
               </div>
               <div>
                 <FieldLabel>{FIELDS.companyWebsite.label}</FieldLabel>
-                <TextInput
-                  value={form.form.websiteUrl}
-                  onChange={(e) => form.setField("websiteUrl", e.target.value)}
-                  placeholder={FIELDS.companyWebsite.placeholder}
-                />
+                <div className="flex gap-2">
+                  <TextInput
+                    value={form.form.websiteUrl}
+                    onChange={(e) => form.setField("websiteUrl", e.target.value)}
+                    placeholder={FIELDS.companyWebsite.placeholder}
+                    className="flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void form.runWebsiteInference(form.form.websiteUrl)}
+                    disabled={
+                      form.websiteInferenceLoading ||
+                      form.aiState === "applying" ||
+                      !form.form.websiteUrl.trim()
+                    }
+                    title="Build your procurement profile from this website using AI"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-bb-powder-blue/40 bg-bb-powder-blue/10 px-3 py-2 text-xs font-medium text-bb-powder-blue hover:bg-bb-powder-blue/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Sparkles size={12} />
+                    Build
+                  </button>
+                </div>
               </div>
               <div>
                 <FieldLabel>{FIELDS.linkedinUrl.label}</FieldLabel>
@@ -420,6 +441,21 @@ export default function OrganisationPage() {
           </Card>
         </div>
       </div>
+
+      {/* Website inference loading screen */}
+      {form.websiteInferenceLoading && (
+        <WebsiteInferenceLoadingScreen stage={form.websiteInferenceStage} />
+      )}
+
+      {/* Website inference result dialog */}
+      {form.websiteInferredProfile && !form.websiteInferenceLoading && (
+        <WebsiteInferenceDialog
+          profile={form.websiteInferredProfile}
+          websiteUrl={form.form.websiteUrl}
+          onApply={form.applyInferredProfile}
+          onClose={form.clearWebsiteInference}
+        />
+      )}
 
       {/* Unsaved changes modal – centred, dimmed backdrop */}
       {showLeaveWarning && (

@@ -7,6 +7,7 @@ import {
   organisationProfileSaveSchema,
   type OrganisationProfileSearchCandidate,
 } from "@/lib/organisation/profile";
+import type { WebsiteInferredProfile } from "@/lib/organisation/website-inference";
 import type { Organisation } from "@/lib/types";
 import type {
   OrganisationProfileFormState,
@@ -267,6 +268,10 @@ export function useOrganisationForm({
     { url: string; handle: string }[]
   >([]);
   const [socialSearchLoading, setSocialSearchLoading] = useState(false);
+  const [websiteInferenceLoading, setWebsiteInferenceLoading] = useState(false);
+  const [websiteInferenceStage, setWebsiteInferenceStage] = useState(0);
+  const [websiteInferredProfile, setWebsiteInferredProfile] =
+    useState<WebsiteInferredProfile | null>(null);
   const draftStorageKey = useMemo(
     () => getDraftStorageKey(organisation?.id),
     [organisation?.id]
@@ -670,6 +675,11 @@ export function useOrganisationForm({
           strategicPreferences: form.strategicPreferences,
           targetMarkets: form.targetMarkets,
           partnerGaps: form.partnerGaps,
+          unspscCodes: form.unspscCodes,
+          anzsicCode: form.anzsicCode,
+          governmentPanels: form.governmentPanels,
+          operatingRegions: form.operatingRegions,
+          tenderKeywords: form.tenderKeywords,
         }),
       });
 
@@ -920,6 +930,105 @@ export function useOrganisationForm({
     []
   );
 
+  const INFERENCE_STAGE_DELAYS = [800, 1800, 4000, 10000];
+
+  const runWebsiteInference = useCallback(async (websiteUrl: string) => {
+    const url = websiteUrl.trim();
+    if (!url) {
+      setNotice({ tone: "warning", text: "Enter a website URL before building from website." });
+      return;
+    }
+
+    setWebsiteInferenceLoading(true);
+    setWebsiteInferenceStage(0);
+    setWebsiteInferredProfile(null);
+    setNotice(null);
+
+    // Advance stage labels at approximate real-world timing
+    const stageTimers = INFERENCE_STAGE_DELAYS.map((delay, i) =>
+      window.setTimeout(() => setWebsiteInferenceStage(i + 1), delay)
+    );
+
+    try {
+      const response = await fetch(API_ENDPOINTS.profileAiInferFromWebsite, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ websiteUrl: url }),
+      });
+
+      const body = (await response.json().catch(() => ({}))) as {
+        profile?: WebsiteInferredProfile;
+        error?: string;
+      };
+
+      if (!response.ok || !body.profile) {
+        throw new Error(body.error ?? "Website inference failed.");
+      }
+
+      setWebsiteInferredProfile(body.profile);
+    } catch (error) {
+      setNotice({
+        tone: "warning",
+        text: error instanceof Error ? error.message : "Could not build profile from website.",
+      });
+    } finally {
+      stageTimers.forEach((t) => clearTimeout(t));
+      setWebsiteInferenceLoading(false);
+      setWebsiteInferenceStage(0);
+    }
+  }, []);
+
+  const applyInferredProfile = useCallback((inferred: WebsiteInferredProfile) => {
+    setForm((current) => ({
+      ...current,
+      description: inferred.description || current.description,
+      location: inferred.location || current.location,
+      sectors: inferred.sectors.length > 0 ? inferred.sectors : current.sectors,
+      capabilities:
+        inferred.capabilities.length > 0
+          ? inferred.capabilities.map((c, i) => ({
+              id: `inferred-${i}`,
+              name: c.name,
+              category: c.category,
+            }))
+          : current.capabilities,
+      certifications:
+        inferred.certifications.length > 0
+          ? inferred.certifications.map((c, i) => ({ id: `inferred-cert-${i}`, ...c }))
+          : current.certifications,
+      individualQualifications:
+        inferred.individualQualifications.length > 0
+          ? inferred.individualQualifications.map((q, i) => ({ id: `inferred-iq-${i}`, ...q }))
+          : current.individualQualifications,
+      caseStudies:
+        inferred.caseStudies.length > 0
+          ? inferred.caseStudies.map((cs, i) => ({ id: `inferred-cs-${i}`, ...cs }))
+          : current.caseStudies,
+      strategicPreferences:
+        inferred.strategicPreferences.length > 0
+          ? inferred.strategicPreferences
+          : current.strategicPreferences,
+      targetMarkets:
+        inferred.targetMarkets.length > 0 ? inferred.targetMarkets : current.targetMarkets,
+      partnerGaps: inferred.partnerGaps.length > 0 ? inferred.partnerGaps : current.partnerGaps,
+      // New procurement fields — always overwrite with inferred (they start empty)
+      unspscCodes: inferred.unspscCodes,
+      anzsicCode: inferred.anzsicCode,
+      governmentPanels: inferred.governmentPanels,
+      operatingRegions: inferred.operatingRegions,
+      tenderKeywords: inferred.tenderKeywords,
+    }));
+    setWebsiteInferredProfile(null);
+    setNotice({
+      tone: "positive",
+      text: "Profile applied from website inference. Review the fields below, then save.",
+    });
+  }, []);
+
+  const clearWebsiteInference = useCallback(() => {
+    setWebsiteInferredProfile(null);
+  }, []);
+
   const listHandlers = {
     capabilities: {
       items: form.capabilities,
@@ -978,5 +1087,12 @@ export function useOrganisationForm({
     clearSocialSearchMatches,
     handleSave,
     handleDelete,
+    // Website inference
+    websiteInferenceLoading,
+    websiteInferenceStage,
+    websiteInferredProfile,
+    runWebsiteInference,
+    applyInferredProfile,
+    clearWebsiteInference,
   };
 }

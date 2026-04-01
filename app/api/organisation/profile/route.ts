@@ -54,6 +54,12 @@ export async function POST(request: Request) {
       strategic_preferences: normalised.strategicPreferences,
       target_markets: normalised.targetMarkets,
       partner_gaps: normalised.partnerGaps,
+      // Government procurement intelligence
+      unspsc_codes: normalised.unspscCodes,
+      anzsic_code: normalised.anzsicCode,
+      government_panels: normalised.governmentPanels,
+      operating_regions: normalised.operatingRegions,
+      tender_keywords: normalised.tenderKeywords,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" }
