@@ -54,6 +54,15 @@ function PillarActions({
       <>
         <button
           type="button"
+          onClick={() => void actions.handleSyncLinkedInProfile()}
+          disabled={loadingAction === "sync-linkedin-profile"}
+          className={btn}
+        >
+          {loadingAction === "sync-linkedin-profile" ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          Sync Profile
+        </button>
+        <button
+          type="button"
           onClick={actions.handleConnectLinkedInCompanyAdmin}
           disabled={loadingAction === "connect-linkedin-company-admin"}
           className={btn}
@@ -151,8 +160,33 @@ function PillarContent({
     return <p className="text-xs text-bb-orange">{data.hubspotWarnings}</p>;
   }
 
-  if (pillarId === "reach" && data.linkedInCompanyWarnings) {
-    return <p className="text-xs text-bb-orange">{data.linkedInCompanyWarnings}</p>;
+  if (pillarId === "reach") {
+    const profile = data.linkedInProfile;
+    const hasProfile = profile?.fullName || profile?.pictureUrl;
+    if (!hasProfile && !data.linkedInCompanyWarnings) return null;
+    return (
+      <div className="space-y-1.5">
+        {hasProfile && (
+          <div className="flex items-center gap-2">
+            {profile?.pictureUrl && (
+              <Image
+                src={profile.pictureUrl}
+                alt=""
+                width={28}
+                height={28}
+                className="rounded-full"
+              />
+            )}
+            {profile?.fullName && (
+              <span className="text-sm text-gray-200">{profile.fullName}</span>
+            )}
+          </div>
+        )}
+        {data.linkedInCompanyWarnings && (
+          <p className="text-xs text-bb-orange">{data.linkedInCompanyWarnings}</p>
+        )}
+      </div>
+    );
   }
 
   return null;

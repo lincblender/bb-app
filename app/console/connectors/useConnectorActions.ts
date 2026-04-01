@@ -15,6 +15,7 @@ export interface ConnectorActions {
   handleConnectLinkedIn: () => void;
   handleConnectHubSpot: () => void;
   handleConnectLinkedInCompanyAdmin: () => void;
+  handleSyncLinkedInProfile: () => Promise<void>;
 }
 
 export function useConnectorActions(options: {
@@ -85,10 +86,42 @@ export function useConnectorActions(options: {
     }
   }, [setLoadingAction]);
 
+  const handleSyncLinkedInProfile = useCallback(async () => {
+    setLoadingAction("sync-linkedin-profile");
+    setFeedback(null);
+    try {
+      const { data: { session } } = await createClient().auth.getSession();
+      const providerToken = session?.provider_token ?? null;
+      const response = await fetch("/api/connectors/linkedin/profile/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerToken }),
+      });
+      const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!response.ok) {
+        throw new Error(
+          typeof body.error === "string" ? body.error : `Request failed with status ${response.status}.`
+        );
+      }
+      await refetch();
+      const profile = body.profile as Record<string, unknown> | undefined;
+      const name = typeof profile?.fullName === "string" ? profile.fullName : null;
+      setFeedback({ tone: "positive", text: name ? `Profile synced for ${name}.` : "LinkedIn profile synced." });
+    } catch (error) {
+      setFeedback({
+        tone: "warning",
+        text: error instanceof Error ? error.message : "Profile sync failed.",
+      });
+    } finally {
+      setLoadingAction(null);
+    }
+  }, [refetch, setLoadingAction, setFeedback]);
+
   return {
     runPostAction,
     handleConnectLinkedIn,
     handleConnectHubSpot,
     handleConnectLinkedInCompanyAdmin,
+    handleSyncLinkedInProfile,
   };
 }

@@ -12,6 +12,12 @@ import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceData } from "@/lib/workspace/client";
 import { getManagedOrganizations, getTimestampLabel } from "./utils";
 
+export interface LinkedInProfileSummary {
+  fullName: string | null;
+  pictureUrl: string | null;
+  profileUrl: string | null;
+}
+
 export interface ConnectorData {
   pillarStatuses: SetupPillarStatus[];
   readyCount: number;
@@ -20,6 +26,7 @@ export interface ConnectorData {
   linkedInCompanyAdminConnector: ReturnType<ReturnType<typeof getCoreConnectorMap>["get"]>;
   hubspotConnector: ReturnType<ReturnType<typeof getCoreConnectorMap>["get"]>;
   austenderConnector: ReturnType<ReturnType<typeof getCoreConnectorMap>["get"]>;
+  linkedInProfile: LinkedInProfileSummary | null;
   linkedInManagedOrganizations: Array<Record<string, unknown>>;
   linkedInCompanyWarnings: string | null;
   linkedInCompanyLastSync: string | null;
@@ -71,6 +78,23 @@ export function useConnectorData(): ConnectorData {
   const hubspotConnector = coreConnectorMap.get(CONNECTOR_IDS.hubspot);
   const austenderConnector = coreConnectorMap.get(CONNECTOR_IDS.austender);
 
+  const linkedInProfile: LinkedInProfileSummary | null = linkedInIdentityConnector?.config
+    ? {
+        fullName:
+          typeof linkedInIdentityConnector.config.profile_full_name === "string"
+            ? linkedInIdentityConnector.config.profile_full_name
+            : null,
+        pictureUrl:
+          typeof linkedInIdentityConnector.config.profile_picture_url === "string"
+            ? linkedInIdentityConnector.config.profile_picture_url
+            : null,
+        profileUrl:
+          typeof linkedInIdentityConnector.config.profile_url === "string"
+            ? linkedInIdentityConnector.config.profile_url
+            : null,
+      }
+    : null;
+
   return {
     pillarStatuses,
     readyCount: countReadyPillars(pillarStatuses),
@@ -79,6 +103,7 @@ export function useConnectorData(): ConnectorData {
     linkedInCompanyAdminConnector,
     hubspotConnector,
     austenderConnector,
+    linkedInProfile,
     linkedInManagedOrganizations: getManagedOrganizations(
       linkedInCompanyAdminConnector?.config?.managed_organizations
     ),

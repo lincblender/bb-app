@@ -60,7 +60,7 @@ const LINKEDIN_AUTHORIZE_URL = "https://www.linkedin.com/oauth/v2/authorization"
 const LINKEDIN_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
 const LINKEDIN_REST_BASE_URL = process.env.LINKEDIN_REST_BASE_URL ?? "https://api.linkedin.com/rest";
 const DEFAULT_LINKEDIN_API_VERSION = "202602";
-const DEFAULT_LINKEDIN_COMPANY_ADMIN_SCOPES = "r_organization_admin";
+const DEFAULT_LINKEDIN_COMPANY_ADMIN_SCOPES = "r_organization_admin r_liteprofile";
 const PKCE_TRUE_VALUES = new Set(["1", "true", "yes", "on"]);
 
 export interface LinkedInClientCredentials {
