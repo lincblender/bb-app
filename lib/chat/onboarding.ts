@@ -1,6 +1,6 @@
 export const ONBOARDING_PROGRESS_STORAGE_KEY = "bidblender-onboarding-progress";
 
-export type OnboardingStepId = "crm" | "tender_boards" | "reach" | "capability";
+export type OnboardingStepId = "company" | "crm" | "tender_boards" | "reach" | "capability";
 
 export interface OnboardingChoice {
   id: string;
@@ -10,19 +10,47 @@ export interface OnboardingChoice {
   message: string;
 }
 
+/** When present, the step renders a free-text URL input instead of choice buttons. */
+export interface OnboardingTextInput {
+  placeholder: string;
+  submitLabel: string;
+}
+
 export interface OnboardingStepDefinition {
   id: OnboardingStepId;
   title: string;
   intro: string;
-  livePathLabel: string;
-  choices: OnboardingChoice[];
+  /** Shown only for choice-button steps. */
+  livePathLabel?: string;
+  /** Shown only for choice-button steps. */
+  choices?: OnboardingChoice[];
+  /** When present, renders a text input instead of choice buttons. */
+  textInput?: OnboardingTextInput;
 }
+
+export type CompanyInferenceStatus = "running" | "done" | "failed";
 
 export interface OnboardingProgress {
   selections: Partial<Record<OnboardingStepId, string>>;
+  /** Website URL the user submitted in the company step. */
+  companyWebsiteUrl?: string;
+  /** Background inference lifecycle. */
+  companyInferenceStatus?: CompanyInferenceStatus;
+  /** Company name derived from the website URL, stored on successful inference. */
+  companyName?: string;
 }
 
 export const ONBOARDING_STEPS: OnboardingStepDefinition[] = [
+  {
+    id: "company",
+    title: "Your company",
+    intro:
+      "Let's start by building your company profile. Drop in your website and we'll do the heavy lifting — UNSPSC codes, ANZSIC classification, government panels, and tender keywords — while you set up the other connections.",
+    textInput: {
+      placeholder: "https://yourcompany.com.au",
+      submitLabel: "Build profile",
+    },
+  },
   {
     id: "crm",
     title: "CRM history",
@@ -189,12 +217,20 @@ export function loadOnboardingProgress(): OnboardingProgress {
     }
 
     const parsed = JSON.parse(raw) as OnboardingProgress;
-    return {
+    const progress: OnboardingProgress = {
       selections:
         parsed && parsed.selections && typeof parsed.selections === "object"
           ? parsed.selections
           : {},
+      companyWebsiteUrl: typeof parsed.companyWebsiteUrl === "string" ? parsed.companyWebsiteUrl : undefined,
+      // Reset "running" so inference can restart after a page refresh mid-flight
+      companyInferenceStatus:
+        parsed.companyInferenceStatus === "done" || parsed.companyInferenceStatus === "failed"
+          ? parsed.companyInferenceStatus
+          : undefined,
+      companyName: typeof parsed.companyName === "string" ? parsed.companyName : undefined,
     };
+    return progress;
   } catch {
     return { selections: {} };
   }
