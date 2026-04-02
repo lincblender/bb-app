@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentUserProfile } from "@/lib/auth/useCurrentUserProfile";
 import { OnboardingPseudoChat } from "./OnboardingPseudoChat";
 import { AssistantAvatar, UserAvatar } from "./Avatar";
+import { MultiplayerAvatars } from "./MultiplayerAvatars";
 import { DocumentUploader } from "./DocumentUploader";
 import {
   countReadyPillars,
@@ -889,7 +890,16 @@ export function PromptScreen({ mobileTopPadding = false }: PromptScreenProps = {
         </div>
       )}
       {currentChatId && currentChat && (
-        <div className="flex shrink-0 items-center justify-end border-b border-gray-700/50 px-4 py-2">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-700/50 px-4 py-2">
+          <div>
+            {(() => {
+               const activeOpp = currentChat.tags.find(t => t.type === 'opportunity');
+               if (activeOpp?.opportunityId) {
+                  return <MultiplayerAvatars roomId={activeOpp.opportunityId} />;
+               }
+               return null;
+            })()}
+          </div>
           <div className="relative" ref={chatMenuRef}>
             <button
               type="button"

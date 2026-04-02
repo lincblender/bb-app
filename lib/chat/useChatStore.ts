@@ -167,6 +167,52 @@ export function useChatStore() {
       }
       hydratedRef.current = true;
     });
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel('chat-messages-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chat_messages' },
+        (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const row = payload.new as Record<string, any>;
+            const chatId = row.chat_id;
+            
+            // Reconstruct the message
+            const incomingMsg: ChatMessage = {
+               id: row.id,
+               role: row.role as ChatMessage['role'],
+               content: row.content,
+               blocks: row.blocks ?? [],
+               attachments: row.attachments ?? [],
+               timestamp: new Date(row.created_at)
+            };
+
+            setChats((prevChats) => {
+              const targetChat = prevChats.find(c => c.id === chatId);
+              if (!targetChat) return prevChats; // Not related to our active chats
+
+              const exists = targetChat.messages.findIndex(m => m.id === incomingMsg.id);
+              if (exists > -1) {
+                 // Ignore if our local message is identical (or newer optimistically)
+                 // Or update if we want to stream partial blocks from a foreign client
+                 const newMessages = [...targetChat.messages];
+                 newMessages[exists] = incomingMsg;
+                 return prevChats.map(c => c.id === chatId ? { ...c, messages: newMessages } : c);
+              } else {
+                 // Append the foreign message
+                 return prevChats.map(c => c.id === chatId ? { ...c, messages: [...c.messages, incomingMsg] } : c);
+              }
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
