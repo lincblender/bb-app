@@ -20,6 +20,7 @@ import { useWorkspaceData } from "@/lib/workspace/client";
 import { Badge } from "@/components/ui/Badge";
 import { getRelatedChats } from "@/lib/chat/related-chats";
 import type { AgentResponseBlock, Chat } from "@/lib/chat/types";
+import { DocumentUploader } from "./DocumentUploader";
 
 const SECTION_IDS = ["key-info", "docs", "network", "status", "decisions", "related-chats"] as const;
 
@@ -547,7 +548,9 @@ export function OpportunityPanel({
           defaultOpen={false}
           open={sectionToOpen === "docs" ? true : undefined}
         >
-          <div className="space-y-3 text-sm">
+          <div className="space-y-4 text-sm">
+            <DocumentUploader opportunityId={opp.id} onUploadComplete={() => {}} />
+
             {opp.sourceId ? (
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Source</p>

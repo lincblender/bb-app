@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentUserProfile } from "@/lib/auth/useCurrentUserProfile";
 import { OnboardingPseudoChat } from "./OnboardingPseudoChat";
 import { AssistantAvatar, UserAvatar } from "./Avatar";
+import { DocumentUploader } from "./DocumentUploader";
 import {
   countReadyPillars,
   getIncompletePillars,
@@ -1219,22 +1220,12 @@ export function PromptScreen({ mobileTopPadding = false }: PromptScreenProps = {
               </div>
             )}
             <div className="flex gap-2 rounded-xl border border-gray-600 bg-bb-dark shadow-sm focus-within:border-bb-coral focus-within:ring-1 focus-within:ring-bb-coral">
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept=".pdf,.docx,.txt,.md,.json,.csv,.xml"
-                onChange={handleFileChange}
+              <DocumentUploader
+                variant="icon"
+                onUploadComplete={(assetId, filename) => {
+                  alert(`Document ${filename} has been uploaded to the Quarantine Vault and securely ingested.`);
+                }}
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center px-4 text-gray-500 transition-colors hover:text-gray-300"
-                aria-label="Add file"
-                title="Add file"
-              >
-                <Paperclip size={20} />
-              </button>
               <input
                 type="text"
                 value={input}
