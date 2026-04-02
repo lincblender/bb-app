@@ -61,6 +61,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const message = typeof body.message === "string" ? body.message.trim() : "";
+    const chatHistory = Array.isArray(body.chatHistory) ? body.chatHistory : [];
     const opportunityIds = Array.isArray(body.opportunityIds)
       ? (body.opportunityIds as string[])
       : [];
@@ -149,6 +150,11 @@ export async function POST(request: Request) {
         )
         .join("\n");
       inputs.chat_context = `${inputs.chat_context ?? message}\n\nAttachment extraction notes:\n${attachmentNotes}`;
+    }
+
+    if (chatHistory.length > 0) {
+        const formattedHistory = chatHistory.map((m: any) => `${m.role.toUpperCase()}: ${m.content}`).join("\n\n");
+        inputs.chat_context = `[PREVIOUS CONVERSATION CONTEXT]\n${formattedHistory}\n\n[CURRENT PROMPT]\n${inputs.chat_context ?? message}`;
     }
 
     const response = await runAnalysisJob({

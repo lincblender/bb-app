@@ -475,6 +475,12 @@ export function PromptScreen({ mobileTopPadding = false }: PromptScreenProps = {
   }, []);
 
   useEffect(() => {
+    if (currentChat?.messages && currentChat.messages.length > 8 && !isCompressing) {
+      checkAndCompress();
+    }
+  }, [currentChat?.messages?.length, checkAndCompress, isCompressing]);
+
+  useEffect(() => {
     createClient()
       .auth.getUser()
       .then(async ({ data: { user } }) => {

@@ -20,13 +20,14 @@ interface FetchAiChatResult {
 async function fetchAiChatBlocks(
   message: string,
   opportunityIds: string[],
-  attachments?: ChatAttachment[]
+  attachments: ChatAttachment[] = [],
+  chatHistory: ChatMessage[] = []
 ): Promise<FetchAiChatResult> {
   try {
     const res = await fetch("/api/ai/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, opportunityIds, attachments }),
+      body: JSON.stringify({ message, opportunityIds, attachments, chatHistory }),
     });
 
     const data = await res.json().catch(() => null);
@@ -409,7 +410,8 @@ export function useSubmitPrompt() {
       } else if (lookupResult) {
         blocks = lookupResult.blocks;
       } else {
-        const aiResult = await fetchAiChatBlocks(requestMessage, oppIdsForChat, attachments);
+        const historyToSend = targetChat?.messages ?? [];
+        const aiResult = await fetchAiChatBlocks(requestMessage, oppIdsForChat, attachments, historyToSend);
         blocks =
           aiResult.blocks ??
           (attachments.length > 0
