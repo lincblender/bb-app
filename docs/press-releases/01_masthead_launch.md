@@ -6,7 +6,7 @@ Traditional procurement is reactive and fragmented. Contractors spend agonizing 
 
 BidBlender eliminates this friction by operating as a holistic Opportunity Intelligence engine.
 
-"Opportunity Intelligence isn't just about reading a tender document; it’s about discovering the opportunity the second it drops, immediately scoring your organizational capability against it, and mapping the human relationships that influence the outcome," said Lincoln, Product Lead at BidBlender. "BidBlender acts as an autonomous data logistics layer. It autonomously ingests data from government portals like AusTender, synthesizes your company's network reach via LinkedIn, and generates an instant 'Traffic-Light' Bid/No-Bid assessment. We don't just help you write the bid—we mathematically identify the exact opportunities you are inherently positioned to win."
+"Opportunity Intelligence isn't just about reading a tender document; it’s about discovering the opportunity the second it drops, immediately scoring your organizational capability against it, and mapping the human relationships that influence the outcome," said Lincoln, Founder at BidBlender. "BidBlender acts as an autonomous data logistics layer. It autonomously ingests data from government portals like AusTender, synthesizes your company's network reach via LinkedIn, and generates an instant 'Traffic-Light' Bid/No-Bid assessment. We don't just help you write the bid—we mathematically identify the exact opportunities you are inherently positioned to win."
 
 ## The "Clean Room" Legal Arbitrage
 
