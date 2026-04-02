@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
+import * as cheerio from "https://esm.sh/cheerio@1.0.0-rc.12";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,40 +32,76 @@ serve(async (req) => {
     
     let processedCount = 0;
 
-    // 2. Iterate and simulate scraping
+    // 2. Iterate and process AusTender opportunities autonomously
     for (const opp of (opportunities || [])) {
-      // IN PRODUCTION: We would fetch(opp.source_id) using an RSS parser or headless scraper
-      // For MVP: Ensure we randomly detect a "new" document to simulate the monitor finding one.
+      if (!opp.source_id.startsWith("opp-austender-")) continue;
       
-      const hasNewAddendumOnPortal = Math.random() > 0.5; // Simulate a 50% hit chance
-      if (hasNewAddendumOnPortal) {
-        
-        // Pseudo-download the addendum file from the portal
-        const fauxContent = "Simulated Addendum 1: The due date has been extended by 3 weeks and Liability Insurance requirement dropped.";
-        const filename = `addendum-simulated-${Date.now()}.txt`;
-        const storagePath = `${opp.tenant_id}/${crypto.randomUUID()}-addendum.txt`;
+      const uuid = opp.source_id.replace("opp-austender-", "").trim();
+      const url = `https://www.tenders.gov.au/Atm/Show/${uuid}`;
 
-        // Upload directly to Quarantine Vault so it undergoes virus scanning & extraction automatically
-        await supabaseClient.storage
-           .from("opportunity_documents")
-           .upload(storagePath, fauxContent, { contentType: "text/plain" });
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html"
+          }
+        });
         
-        // Log the document asset mapped to the opportunity, firing the webhook pipeline
-        const { error: insertError } = await supabaseClient
-           .from("document_assets")
-           .insert({
-             tenant_id: opp.tenant_id,
-             opportunity_id: opp.id,
-             storage_path: storagePath,
-             original_filename: filename,
-             size_bytes: fauxContent.length,
-             scan_status: "pending",   // This triggers the scan-document function which later triggers ingest/evaluate
-             metadata: { type: "addendum", source: "automated_monitor" }
-           });
+        if (!res.ok) continue;
 
-        if (!insertError) {
-          processedCount++;
+        const html = await res.text();
+        const $ = cheerio.load(html);
+
+        // Find all rows in potential Addenda tables
+        const addendaRows = $("tr").filter((i, el) => {
+          const text = $(el).text().toLowerCase();
+          return text.includes("addend") || text.includes("amendment");
+        });
+
+        if (addendaRows.length > 0) {
+           // We found an addendum mention on the AusTender page
+           // Extract the text content as a robust summary since we can't reliably scrape binary PDFs without authenticated sessions
+           const addendumText = addendaRows.first().text().replace(/\s+/g, ' ').trim();
+           
+           // Check if we already logged this addendum
+           const hashStr = addendumText.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '');
+           const filename = `austender-addendum-${hashStr}.txt`;
+           
+           const { data: existingAsset } = await supabaseClient
+             .from("document_assets")
+             .select("id")
+             .eq("opportunity_id", opp.id)
+             .eq("original_filename", filename)
+             .single();
+
+           if (!existingAsset) {
+             // It's a brand new addendum!
+             const simulatedBinaryContent = `Automated AusTender Discovery:\nSource: ${url}\n\nAddendum Details Extracted from Portal:\n${addendumText}`;
+             const storagePath = `${opp.tenant_id}/${crypto.randomUUID()}-addendum.txt`;
+
+             await supabaseClient.storage
+               .from("opportunity_documents")
+               .upload(storagePath, simulatedBinaryContent, { contentType: "text/plain" });
+
+             const { error: insertError } = await supabaseClient
+               .from("document_assets")
+               .insert({
+                 tenant_id: opp.tenant_id,
+                 opportunity_id: opp.id,
+                 storage_path: storagePath,
+                 original_filename: filename,
+                 size_bytes: simulatedBinaryContent.length,
+                 scan_status: "pending",   // Triggers evaluation
+                 metadata: { type: "addendum", source: "austender", url }
+               });
+
+             if (!insertError) {
+               processedCount++;
+             }
+           }
         }
+      } catch (err) {
+        console.error(`Failed to scan AusTender ID: ${uuid}`, err);
       }
     }
 
