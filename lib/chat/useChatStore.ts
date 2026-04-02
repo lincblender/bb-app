@@ -396,6 +396,16 @@ export function useChatStore() {
     },
     [chats, currentChatId, currentOpportunityContext, updateChatTags]
   );
+  
+  const compressChatMessages = useCallback((chatId: string, compressedMessages: ChatMessage[]) => {
+    setChats((c) =>
+      c.map((ch) =>
+        ch.id === chatId
+          ? { ...ch, messages: compressedMessages, updatedAt: new Date().toISOString() }
+          : ch
+      )
+    );
+  }, []);
 
   return {
     chats,
@@ -419,5 +429,6 @@ export function useChatStore() {
     unarchiveChat,
     breakApartChat,
     inferAndApplyTags,
+    compressChatMessages,
   };
 }

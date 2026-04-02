@@ -10,6 +10,7 @@ import { useWorkspaceData } from "@/lib/workspace/client";
 import { useChat } from "@/lib/chat/ChatContext";
 import { useSubmitPrompt } from "@/lib/chat/useSubmitPrompt";
 import { extractAttachment } from "@/lib/chat/attachments";
+import { useChatCompression } from "@/lib/chat/useChatCompression";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUserProfile } from "@/lib/auth/useCurrentUserProfile";
 import { OnboardingPseudoChat } from "./OnboardingPseudoChat";
@@ -441,6 +442,7 @@ export function PromptScreen({ mobileTopPadding = false }: PromptScreenProps = {
   const dragDepthRef = useRef(0);
   const { opportunities, organisations, connectorSources, refetch } = useWorkspaceData();
   const submitPromptAction = useSubmitPrompt();
+  const { checkAndCompress, isCompressing } = useChatCompression();
   const currentUserProfile = useCurrentUserProfile();
   const getOpportunityById = (id: string) => opportunities.find((o) => o.id === id);
   const [linkedInConnected, setLinkedInConnected] = useState(false);
