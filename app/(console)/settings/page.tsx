@@ -3,6 +3,7 @@
 import { useSettingsContext } from "@/lib/settings/SettingsContext";
 import { Card } from "@/components/ui/Card";
 import { useWorkspaceData } from "@/lib/workspace/client";
+import { mcpLibrary } from "@/lib/mcp/library";
 
 export default function SettingsPage() {
   const {
@@ -85,6 +86,34 @@ export default function SettingsPage() {
                     <p className="text-sm text-gray-500">{conn.contribution}</p>
                     <p className="mt-1 text-xs text-gray-400">
                       {conn.sourceType} · {conn.status}
+                    </p>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className="bb-section-title">External Intelligence (MCP Integrations)</h2>
+          <p className="mt-1 text-sm bb-text-muted">
+            Connect Secure Model Context Protocol servers to smash data silos. Enable two-way writes and native read access for the intelligence engine against your private ecosystems.
+          </p>
+          <div className="mt-4 space-y-3">
+            {mcpLibrary.map((mcp) => {
+              return (
+                <label key={mcp.id} className="bb-list-item opacity-80 hover:opacity-100 transition-opacity">
+                  <input
+                    type="checkbox"
+                    className="bb-checkbox"
+                    disabled={mcp.status === "coming-soon"}
+                    defaultChecked={mcp.status === "available" && mcp.id === "mcp-hubspot"}
+                  />
+                  <div>
+                    <p className="font-medium bb-text-primary">{mcp.name} {mcp.status === "coming-soon" && <span className="ml-2 text-xs text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded-full">Coming Soon</span>}</p>
+                    <p className="text-sm text-gray-500">{mcp.description}</p>
+                    <p className="mt-1 text-xs text-gray-400">
+                      Protocol: {mcp.requiresAuth ? "Secure Bearer Auth" : "Open Local"} {mcp.url && `· Endpoint: ${mcp.url}`}
                     </p>
                   </div>
                 </label>

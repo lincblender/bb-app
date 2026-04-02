@@ -76,4 +76,20 @@ export const mcpLibrary: McpLibraryEntry[] = [
     status: "available",
     requiresAuth: false,
   },
+  {
+    id: "mcp-jira",
+    name: "Atlassian Jira",
+    description: "Read delivery timelines, active epics, and autonomously push delivery tasks based on won bids.",
+    url: "https://mcp.atlassian.com/jira",
+    status: "available",
+    requiresAuth: true,
+  },
+  {
+    id: "mcp-postgres",
+    name: "PostgreSQL Database",
+    description: "Execute read-only and write-back actions against local SQL databases containing proprietary pricing logic.",
+    url: "https://mcp.local/postgres",
+    status: "available",
+    requiresAuth: true,
+  },
 ];
