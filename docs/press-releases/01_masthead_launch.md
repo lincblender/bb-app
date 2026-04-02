@@ -1,6 +1,6 @@
 # Press Release: BidBlender Enterprise
 
-**SYDNEY, AUSTRALIA – October 15, 2026** – BidBlender today announced the general availability of BidBlender Enterprise, fundamentally transforming how top-tier contractors, consortiums, and government buyers discover, qualify, and execute multi-million dollar procurement opportunities. By uniting autonomous opportunity discovery with an unprecedented "Data Clean Room" architecture, organizations can now operate with total Opportunity Intelligence—synthesizing market signals, network influence, and highly sensitive capability documents entirely across corporate firewalls without jeopardising Intellectual Property.
+**MELBOURNE, AUSTRALIA – April 3, 2026** – BidBlender today announced the general availability of BidBlender Enterprise, fundamentally transforming how top-tier contractors, consortiums, and government buyers discover, qualify, and execute multi-million dollar procurement opportunities. By uniting autonomous opportunity discovery with an unprecedented "Data Clean Room" architecture, organizations can now operate with total Opportunity Intelligence—synthesizing market signals, network influence, and highly sensitive capability documents entirely across corporate firewalls without jeopardising Intellectual Property.
 
 Traditional procurement is reactive and fragmented. Contractors spend agonizing hours manually tracking government portals, only to face impenetrable 200-page RFPs. Qualifying these bids against a company's past performance and calculating Win Probability often requires weeks of internal alignment and heavy legal friction, particularly when involving external Teaming Partners or bound by rigorous Non-Disclosure Agreements (NDAs).
 
@@ -10,9 +10,9 @@ BidBlender eliminates this friction by operating as a holistic Opportunity Intel
 
 ## The "Clean Room" Legal Arbitrage
 
-When an opportunity moves from discovery to deep validation, BidBlender introduces its proprietary **Data Clean Rooms**. 
+When an opportunity moves from discovery to deep validation, BidBlender introduces its proprietary **Data Clean Rooms**.
 
-When an enterprise buyer releases a highly-sensitive tender, or when competing prime contractors form a teaming consortium, merging proprietary data invites intense legal vulnerability. With Data Clean Rooms, a government buyer or partnering firm can upload their most sensitive documentation into BidBlender's S3 Quarantine. 
+When an enterprise buyer releases a highly-sensitive tender, or when competing prime contractors form a teaming consortium, merging proprietary data invites intense legal vulnerability. With Data Clean Rooms, a government buyer or partnering firm can upload their most sensitive documentation into BidBlender's S3 Quarantine.
 
 The AI Intelligence engine parses the data natively, allowing vendors to ask our AI, 'Do our capabilities bridge the technical gaps in this RFP?' The AI synthesizes the exact strategic intersections required to win, while the database cryptographically prevents any user from downloading the raw source files of foreign counterparties. This revolutionary workflow provides complete qualification intelligence without the custodial liability—enabling Go/No-Go decisions prior to signing cumbersome NDAs.
 
@@ -28,7 +28,6 @@ Underpinned by a dual-tier AI routing capability that dynamically protects token
 
 **About BidBlender**
 BidBlender is an intelligence logistics platform engineered to streamline and secure B2B tendering, procurement strategies, and consortium teaming. By blending deterministic software with robust generative AI, we allow enterprises to compete harder, faster, and smarter.
-
 
 ---
 
