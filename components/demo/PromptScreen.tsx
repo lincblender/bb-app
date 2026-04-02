@@ -390,7 +390,7 @@ function renderBlock(
         ) : (
           block.ctaText && (
             <Link
-              href={block.ctaHref ?? "/console/opportunities"}
+              href={block.ctaHref ?? "/opportunities"}
               className="mt-3 inline-flex items-center gap-2 rounded-full bg-bb-coral px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-bb-coral/90"
             >
               {block.ctaText}
@@ -791,7 +791,7 @@ export function PromptScreen({ mobileTopPadding = false }: PromptScreenProps = {
             </p>
           </div>
           <Link
-            href="/console/get-started"
+            href="/get-started"
             className="inline-flex items-center gap-2 rounded-full border border-gray-600 px-4 py-2 text-sm text-gray-200 hover:border-bb-powder-blue hover:text-white"
           >
             Open setup guide

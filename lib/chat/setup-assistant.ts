@@ -38,7 +38,7 @@ export function resolveSetupAssistant(
         content: "Open connectors to continue the live setup path.",
         ctaText: "Open connectors",
         ctaAction: "connectors",
-        ctaHref: "/console/connectors",
+        ctaHref: "/connectors",
       },
     ];
   }

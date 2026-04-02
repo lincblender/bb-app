@@ -56,7 +56,7 @@ export default function MatrixPage() {
           </div>
         </div>
         <Link
-          href="/console/opportunities"
+          href="/opportunities"
           className="mt-4 inline-block text-sm font-medium text-bb-powder-blue hover:underline"
         >
           View opportunity list →

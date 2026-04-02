@@ -8,7 +8,7 @@ import { BbLogo } from "@/components/ui/BbLogo";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-async function resolvePostAuthDestination(next = "/console/dashboard") {
+async function resolvePostAuthDestination(next = "/dashboard") {
   const res = await fetch(`/api/auth/post-auth-destination?next=${encodeURIComponent(next)}`, {
     cache: "no-store",
   });

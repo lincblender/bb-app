@@ -110,7 +110,7 @@ function OpportunitySearchPanel({
           Or ask about an opportunity in chat to see details here.
         </p>
         <Link
-          href="/console/opportunities"
+          href="/opportunities"
           className="mt-3 inline-flex items-center justify-center rounded-lg border border-gray-600 bg-bb-dark px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:border-bb-powder-blue/50 hover:bg-bb-powder-blue/10 hover:text-gray-100"
         >
           Browse all opportunities

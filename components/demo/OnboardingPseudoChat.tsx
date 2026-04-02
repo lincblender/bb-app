@@ -260,7 +260,7 @@ export function OnboardingPseudoChat() {
               {readyPillarCount} of 4 pillars ready
             </Badge>
             <Link
-              href="/console/get-started"
+              href="/get-started"
               className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:border-bb-powder-blue hover:text-white"
             >
               Open setup guide
@@ -447,7 +447,7 @@ export function OnboardingPseudoChat() {
                 opportunity qualification.
               </p>
               <Link
-                href="/console/organisation"
+                href="/organisation"
                 className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-bb-green hover:text-bb-green/80"
               >
                 View company profile
@@ -478,7 +478,7 @@ export function OnboardingPseudoChat() {
                 manually in the Organisation section.
               </p>
               <Link
-                href="/console/organisation"
+                href="/organisation"
                 className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-bb-coral hover:text-bb-coral/80"
               >
                 Set up manually
@@ -491,14 +491,14 @@ export function OnboardingPseudoChat() {
 
       <div className="mt-10 flex flex-wrap gap-3">
         <Link
-          href="/console/connectors"
+          href="/connectors"
           className="inline-flex items-center gap-2 rounded-lg bg-bb-coral px-4 py-2 text-sm font-medium text-white hover:bg-bb-coral/90"
         >
           Open connectors
           <ArrowRight size={16} />
         </Link>
         <Link
-          href="/console/dashboard"
+          href="/dashboard"
           className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 hover:border-bb-powder-blue hover:text-white"
         >
           Continue to dashboard

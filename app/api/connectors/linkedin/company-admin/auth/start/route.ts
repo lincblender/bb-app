@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const next = isSafeRelativePath(url.searchParams.get("next"))
     ? (url.searchParams.get("next") as string)
-    : "/console/connectors";
+    : "/connectors";
 
   try {
     const context = await getAuthenticatedTenantContext();

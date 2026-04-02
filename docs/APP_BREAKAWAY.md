@@ -33,24 +33,19 @@
 
 ## Splice Strategy
 
-1. **Extract** the BB app into a separate repo (`bidblender-app`).
-2. **Extract** marketing into a separate repo (`bidblender-marketing`).
-3. **Simplify paths** on the app: `/console/dashboard` → `/dashboard`, `/console/opportunities` → `/opportunities`, etc. The .io site is auth + app only, so the `/console` prefix is redundant.
-4. **Optional:** Create `packages/bb-core` for shared logic if both repos need it (e.g. types, connectors). Can be done later.
+1. **Path Simplification:** We have moved `app/console` to the `app/(console)` route group. This removes the `/console` prefix from the URL entirely, running the app at the root (e.g. `/dashboard`).
+2. **Link Updates:** We are systematically replacing hardcoded `href="/console/...` references to `href="/...` across the application.
+3. **Marketing Separation:** Marketing pages remain at the root for now, but will eventually be moved to a marketing-specific repo or route group.
 
 ---
 
-## Local Directory Structure (during migration)
+## Local Directory Structure (Current Strategy)
 
-```
-~/Dev-Work/
-  BidBlender/           # Current monolith — lock down, no new features
-  bidblender-marketing/ # New — marketing site only
-  bidblender-app/       # New — app only (auth + console)
-```
+Instead of a hard monolith split into multiple root folders, we use Next.js Route Groups to manage the separation seamlessly within `bb-app`.
 
-- Build the split in the new directories.
-- Once migrated and verified, terminate the current combined stack and Vercel deployment.
+- `app/(console)/*` — The core application
+- `app/auth/*` — Authentication
+- `app/marketing/*` (Planned) — Extracted marketing pages
 
 ---
 

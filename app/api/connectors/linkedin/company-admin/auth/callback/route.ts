@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const cookieStore = await cookies();
-  const next = cookieStore.get(LINKEDIN_ADMIN_NEXT_COOKIE)?.value || "/console/connectors";
+  const next = cookieStore.get(LINKEDIN_ADMIN_NEXT_COOKIE)?.value || "/connectors";
   const expectedState = cookieStore.get(LINKEDIN_ADMIN_STATE_COOKIE)?.value;
   const verifier = cookieStore.get(LINKEDIN_ADMIN_VERIFIER_COOKIE)?.value;
   const code = url.searchParams.get("code");

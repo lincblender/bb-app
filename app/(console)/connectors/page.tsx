@@ -82,7 +82,7 @@ function PillarActions({
           </button>
         )}
         {(data.linkedInManagedOrganizations.length > 0 || data.linkedInIdentityConnector?.status === "live") && (
-          <Link href="/console/network" className={link}>
+          <Link href="/network" className={link}>
             View in network <ArrowRight size={12} />
           </Link>
         )}
@@ -121,7 +121,7 @@ function PillarActions({
 
   if (pillarId === "capability") {
     return (
-      <Link href="/console/organisation" className={btn}>
+      <Link href="/organisation" className={btn}>
         Open organisation profile <ArrowRight size={12} />
       </Link>
     );
@@ -139,7 +139,7 @@ function PillarActions({
           {loadingAction === "sync-austender" ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           Sync AusTender
         </button>
-        <Link href="/console/opportunities" className={link}>
+        <Link href="/opportunities" className={link}>
           View opportunities <ArrowRight size={12} />
         </Link>
       </>

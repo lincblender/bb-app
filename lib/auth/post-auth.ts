@@ -30,7 +30,7 @@ export async function resolvePostAuthDestination(
 ): Promise<string> {
   const safeNext = isSafeRelativePath(requestedNext) ? requestedNext : null;
 
-  if (safeNext && safeNext !== "/console/dashboard") {
+  if (safeNext && safeNext !== "/dashboard") {
     return safeNext;
   }
 
@@ -52,5 +52,5 @@ export async function resolvePostAuthDestination(
     return `/console/get-started?${params.toString()}`;
   }
 
-  return safeNext ?? "/console/dashboard";
+  return safeNext ?? "/dashboard";
 }

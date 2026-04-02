@@ -42,7 +42,7 @@ export function ChatTopBar({ pathname, opportunityId }: ChatTopBarProps) {
       // Brief animation before navigating
       setIsAnimating(true);
       await new Promise((r) => setTimeout(r, 300));
-      router.push("/console/dashboard");
+      router.push("/dashboard");
     } finally {
       setIsLoading(false);
       setIsAnimating(false);

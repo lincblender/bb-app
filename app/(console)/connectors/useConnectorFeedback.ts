@@ -53,7 +53,7 @@ export function useConnectorFeedback(options: {
     params.delete("hubspot");
     params.delete("linkedin_admin");
     params.delete("detail");
-    router.replace(params.toString() ? `/console/connectors?${params.toString()}` : "/console/connectors");
+    router.replace(params.toString() ? `/connectors?${params.toString()}` : "/connectors");
   }, [router, searchParams, setFeedback]);
 
   const [actionHandled, setActionHandled] = useState<string | null>(null);

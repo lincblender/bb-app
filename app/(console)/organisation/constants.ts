@@ -64,7 +64,7 @@ export const SECTIONS = {
     description:
       "Once the profile is saved, return to the connectors view and the capability pillar should move out of `Next`.",
     linkText: "Back to four pillars",
-    linkHref: "/console/connectors",
+    linkHref: "/connectors",
   },
 } as const;
 

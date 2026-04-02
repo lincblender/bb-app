@@ -62,7 +62,7 @@ export const ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         id: "hubspot",
         label: "HubSpot",
         status: "live",
-        href: "/console/connectors?action=connect-hubspot",
+        href: "/connectors?action=connect-hubspot",
         message:
           "HubSpot is the live CRM path today. It will open the auth flow and then sync only essential recent deal, company, and contact context.",
       },
@@ -100,7 +100,7 @@ export const ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         id: "austender",
         label: "AusTender",
         status: "live",
-        href: "/console/connectors?action=sync-austender",
+        href: "/connectors?action=sync-austender",
         message:
           "AusTender is the live opportunity source today. It will import a limited set of notices from the official RSS feed.",
       },
@@ -138,7 +138,7 @@ export const ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         id: "linkedin",
         label: "LinkedIn",
         status: "live",
-        href: "/console/connectors?action=connect-linkedin",
+        href: "/connectors?action=connect-linkedin",
         message:
           "LinkedIn is the live reach source today. It will connect the user profile and relationship layer first.",
       },
@@ -176,7 +176,7 @@ export const ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         id: "organisation-profile",
         label: "Organisation profile",
         status: "live",
-        href: "/console/organisation",
+        href: "/organisation",
         message:
           "The organisation profile is the live capability path today. That is where BidBlender should curate capability evidence for matching and qualification.",
       },

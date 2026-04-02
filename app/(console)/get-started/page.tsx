@@ -92,7 +92,7 @@ export default function ConsoleGetStartedPage() {
             Use the conversational interface or the explorer to locate a specific opportunity, select it deterministically, and begin qualification.
           </p>
           <Link
-            href="/console/dashboard?focus=chat"
+            href="/dashboard?focus=chat"
             className="mt-6 inline-flex w-fit items-center gap-2 text-sm font-medium text-bb-coral hover:text-bb-coral/85"
           >
             Ask the assistant
@@ -113,7 +113,7 @@ export default function ConsoleGetStartedPage() {
             Upload a brief, RFT, or related document. We extract the dense text and explicitly ground our AI models in your authoritative file.
           </p>
           <Link
-            href="/console/dashboard"
+            href="/dashboard"
             className="mt-6 inline-flex w-fit items-center gap-2 text-sm font-medium text-bb-coral hover:text-bb-coral/85"
           >
             Start analysis

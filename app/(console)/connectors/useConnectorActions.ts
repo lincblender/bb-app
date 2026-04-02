@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceData } from "@/lib/workspace/client";
 
-const REDIRECT_BASE = "/console/connectors";
+const REDIRECT_BASE = "/connectors";
 
 export interface ConnectorActions {
   runPostAction: (

@@ -14,23 +14,23 @@ export interface ScreenContext {
 }
 
 const PATH_TO_MODE: Record<string, ChatMode> = {
-  "/console/connectors": "system",
-  "/console/opportunities": "contextual",
-  "/console/organisation": "contextual",
-  "/console/network": "contextual",
-  "/console/matrix": "contextual",
-  "/console/strategy": "contextual",
-  "/console/settings": "contextual",
+  "/connectors": "system",
+  "/opportunities": "contextual",
+  "/organisation": "contextual",
+  "/network": "contextual",
+  "/matrix": "contextual",
+  "/strategy": "contextual",
+  "/settings": "contextual",
 };
 
 const PATH_TO_LABEL: Record<string, string> = {
-  "/console/opportunities": "Opportunity Explorer",
-  "/console/organisation": "Organisation",
-  "/console/network": "Network",
-  "/console/matrix": "Matrix",
-  "/console/connectors": "Intelligence Sources",
-  "/console/strategy": "Strategy",
-  "/console/settings": "Settings",
+  "/opportunities": "Opportunity Explorer",
+  "/organisation": "Organisation",
+  "/network": "Network",
+  "/matrix": "Matrix",
+  "/connectors": "Intelligence Sources",
+  "/strategy": "Strategy",
+  "/settings": "Settings",
 };
 
 export function getScreenContext(pathname: string, opportunityId?: string): ScreenContext | null {

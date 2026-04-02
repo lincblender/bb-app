@@ -130,19 +130,19 @@ function DemoShellInner({ children }: { children: React.ReactNode }) {
   };
 
   const handleNewChat = () => {
-    if (blockNavigationForUnsavedChanges("/console/dashboard")) {
+    if (blockNavigationForUnsavedChanges("/dashboard")) {
       return;
     }
     createChat();
-    if (!isDashboard) router.push("/console/dashboard");
+    if (!isDashboard) router.push("/dashboard");
   };
 
   const handleSelectChat = (id: string) => {
-    if (blockNavigationForUnsavedChanges("/console/dashboard")) {
+    if (blockNavigationForUnsavedChanges("/dashboard")) {
       return;
     }
     selectChat(id);
-    if (!isDashboard) router.push("/console/dashboard");
+    if (!isDashboard) router.push("/dashboard");
   };
 
   const togglePinnedSurface = (surfaceId: string) => {
@@ -157,7 +157,7 @@ function DemoShellInner({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const isDashboard = pathname === "/console/dashboard" || pathname === "/console/dashboard/";
+  const isDashboard = pathname === "/dashboard" || pathname === "/dashboard/";
 
   const pinnedSidebarItems = useMemo(() => {
     const pinnedScreens = pinnedSurfaceIds
@@ -184,12 +184,12 @@ function DemoShellInner({ children }: { children: React.ReactNode }) {
 
   const handleSelectPinnedItem = (surfaceId: string) => {
     if (surfaceId === ONBOARDING_SURFACE_ID) {
-      if (blockNavigationForUnsavedChanges("/console/dashboard")) {
+      if (blockNavigationForUnsavedChanges("/dashboard")) {
         return;
       }
       selectPseudoChat(ONBOARDING_SURFACE_ID);
       if (!isDashboard) {
-        router.push("/console/dashboard");
+        router.push("/dashboard");
       }
       if (isMobile) {
         setSidebarOpen(false);
@@ -265,10 +265,10 @@ function DemoShellInner({ children }: { children: React.ReactNode }) {
       >
         <div className="bb-panel-border flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4">
           <Link
-            href="/console/dashboard"
+            href="/dashboard"
             className="flex items-center gap-2"
             onClick={(event) => {
-              if (blockNavigationForUnsavedChanges("/console/dashboard")) {
+              if (blockNavigationForUnsavedChanges("/dashboard")) {
                 event.preventDefault();
                 return;
               }
@@ -331,9 +331,9 @@ function DemoShellInner({ children }: { children: React.ReactNode }) {
                     >
                       <div className="flex items-center gap-2 px-2">
                         <Link
-                          href={item.href ?? "/console/dashboard"}
+                          href={item.href ?? "/dashboard"}
                           onClick={(event) => {
-                            const href = item.href ?? "/console/dashboard";
+                            const href = item.href ?? "/dashboard";
                             if (blockNavigationForUnsavedChanges(href)) {
                               event.preventDefault();
                               return;

@@ -132,7 +132,7 @@ export const SETUP_PILLARS: SetupPillarDefinition[] = [
     body:
       "Start with CRM history so BidBlender can ground qualification in recent sales memory. Connect HubSpot, then pull only essential deal, company, and contact history. Start lean and fetch deeper context only when an opportunity or client view needs it.",
     connectorId: CONNECTOR_IDS.hubspot,
-    href: "/console/connectors?action=connect-hubspot",
+    href: "/connectors?action=connect-hubspot",
     actionQuery: "connect-hubspot",
   },
   {
@@ -142,7 +142,7 @@ export const SETUP_PILLARS: SetupPillarDefinition[] = [
     body:
       "Choose the market source. AusTender is the live Commonwealth feed today. State and territory feeds are available to add. Import a limited set of current notices, then enrich selectively as the user opens them.",
     connectorId: CONNECTOR_IDS.austender,
-    href: "/console/connectors?action=sync-austender",
+    href: "/connectors?action=sync-austender",
     actionQuery: "sync-austender",
   },
   {
@@ -151,7 +151,7 @@ export const SETUP_PILLARS: SetupPillarDefinition[] = [
     eyebrow: "Pillar 3",
     body:
       "Capture the bidder organisation profile in-app: capabilities, certifications, case studies, and strategic focus. This is the capability pillar until HR/LMS sources are added.",
-    href: "/console/organisation",
+    href: "/organisation",
   },
   {
     id: "reach",
@@ -160,7 +160,7 @@ export const SETUP_PILLARS: SetupPillarDefinition[] = [
     body:
       "Connect the user's LinkedIn identity first, then authorise company-page access if they administer a LinkedIn page. The goal is role-aware company context, not social-graph replication.",
     connectorId: CONNECTOR_IDS.linkedin,
-    href: "/console/connectors?action=connect-linkedin",
+    href: "/connectors?action=connect-linkedin",
     actionQuery: "connect-linkedin",
   },
 ];

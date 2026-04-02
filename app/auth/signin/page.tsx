@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { createClient } from "@/lib/supabase/client";
 
-async function resolvePostAuthDestination(next = "/console/dashboard") {
+async function resolvePostAuthDestination(next = "/dashboard") {
   const res = await fetch(`/api/auth/post-auth-destination?next=${encodeURIComponent(next)}`, {
     cache: "no-store",
   });
