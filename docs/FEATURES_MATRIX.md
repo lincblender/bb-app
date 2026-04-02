@@ -28,21 +28,26 @@ The core `run-analysis-job` edge function validates and structures AI outputs ac
 *   **Competitor Landscape Profiling:** AI identifies likely competitors, detects incumbent advantage, and estimates win probability based on market factors.
 *   **Network Influence Analysis:** Maps relationship density, decision-maker proximity, and recommends concrete relationship actions.
 
-## 4. The Console (User Interface)
-The application surface where users interact with the intelligence.
+## 4. Secure Logistics & Document Intelligence
+Advanced handling and parsing of massive bid portfolios.
 
-*   **Opportunity Dashboard:** Central hub for tracking discovered, qualified, and active bids.
-*   **Organisation Capability Matrix:** A central repository of the company's capabilities, certifications, case studies, and strategic focus, inferred initially via website URL.
-*   **Network Map:** Visualisation of relationships and buyer access.
-*   **Strategy Chat (AI Assistant):** Context-aware chat interface that can search the workspace, cross-reference opportunities, and trigger deep analysis jobs.
+*   **Document Ingestion Pipeline (Active):** Mass ingestion of generic PDFs/tender documents via a secure, virus-scanned `S3` quarantine. Uses intelligent chunking (`pgvector`) to safely query massive domains without user-machine risk.
+*   **Addenda Change Detection (Active):** Automated monitoring of remote portals and document uploads. Evaluates "Material Shifts" explicitly natively mapping to the base opportunity schema, immediately triggering real-time UI notification bells.
+*   **Chat Compression (Active):** Silently running Edge Micro-service that truncates and distills sprawling Context boundaries automatically to maintain high-efficiency Token burn without discarding institutional logic.
+
+## 5. Collaboration & Data Governance (The Console)
+The application surface where distributed teams and cross-pollinated enterprises interact with the intelligence.
+
+*   **Opportunity Dashboard & Matrix:** Central repository for tracking pipeline, capabilities, certifications, case studies, and network maps.
+*   **Data Clean Rooms & Legal Arbitrage (Active):** A revolutionary B2B secure environment allowing parties to query sensitive documents *without* taking custody of them. A Buyer can upload a highly-sensitive RFP. Vendors use BidBlender's AI to qualify the bid *before* signing complex Non-Disclosure Agreements (NDAs). Row-level security blocks foreign RAW downloads while yielding safe analytical intelligence—massively speeding up business cycles.
+*   **Secure Teaming & Multiplayer Workspaces (Active):** This same Clean Room structure empowers competing prime contractors to pool their data for a single joint bid mathematically guaranteeing neither party can steal the other's source files. Their live prompts array instantly onto each other's screen natively through Supabase Realtime synchronization.
 
 ---
 
-## 5. Impending Capabilities (Next in Pipeline)
+## 6. Impending Capabilities (Next in Pipeline)
 
 These features are architected but pending implementation.
 
-*   **Document Ingestion Pipeline:** Extends the AI engine to handle massive PDFs/tender documents via secure, virus-scanned storage and intelligent chunking. Essential for abstracting harmful files away from users' local machines to provide a secondary layer of cybersecurity protection.
-*   **Addenda Change Detection:** Automated diffing of document versions to flag risk or compliance changes requiring immediate attention.
-*   **Chat Summarisation:** Edge-function compression of long strategy chats to maintain token efficiency without losing critical context.
-*   **Stripe Billing Enforcement:** Automated opportunity analysis limits, connector limits, and ad-supported tiers.
+*   **Stripe Billing Enforcement:** Operationalizing the telemetry collected from token efficiency to implement automated limits and ad-supported enterprise tiers.
+*   **Export Pipeline:** Aggregating dynamic chat findings and intelligence blocks into raw formatting for MS Word and Excel compliance matrices.
+*   **CRM Webhook Integration:** Live write-backs to external Customer Relationship Managers automatically shifting opportunities upon strategy generation.
