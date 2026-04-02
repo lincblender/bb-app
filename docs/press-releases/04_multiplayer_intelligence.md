@@ -11,3 +11,14 @@ Leveraging low-latency `postgres` webhooks via Supabase Realtime, BidBlender wor
 "We wanted to build an environment where the AI wasn't just a tool, but an active, visible participant in a team meeting," noted Lincoln, BidBlender Product Lead. 
 
 When a Lead Engineer issues an analytical prompt to BidBlender, the ensuing intelligent deduction blocks stream character-by-character onto the screens of all connected partners simultaneously. As the AI uncovers tactical risks or recommends adjustments to network strategy, distributed teams can seamlessly review, intercept, and augment the generated insights synchronously, radically reducing the time-to-alignment ahead of strict government deadlines.
+
+
+---
+
+## Press Release Series
+
+<div align="center">
+
+[← Previous: Data Clean Rooms](./03_data_clean_rooms.md) | [Next: Contextual Compression Infrastructure →](./05_contextual_compression.md)
+
+</div>

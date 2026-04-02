@@ -13,3 +13,14 @@ Inside a Clean Room, a Buyer safely uploads their sensitive RFP. Utilising nativ
 This same architecture offers massive strategic utility to competing Prime Contractors entering into Joint Ventures. Two rival construction firms can pool their proprietary technical schemas into a shared BidBlender Clean Room. The AI safely synthensizes a joint strategy from both sets of IP, mathematically guaranteeing that Firm A cannot export, download, or steal the core operational documents belonging to Firm B.
 
 By decoupling the process of *intelligence qualification* from physical *document custody*, BidBlender Data Clean Rooms are poised to save enterprise bidders millions in legal review fees and time lost to friction.
+
+
+---
+
+## Press Release Series
+
+<div align="center">
+
+[← Previous: Autonomous Discovery Pipeline](./02_autonomous_discovery.md) | [Next: Multiplayer Strategy Workspaces →](./04_multiplayer_intelligence.md)
+
+</div>

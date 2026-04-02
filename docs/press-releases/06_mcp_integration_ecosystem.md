@@ -11,3 +11,14 @@ BidBlender's integration of MCP fundamentally destroys this architecture by allo
 With MCP, the BidBlender environment instantly gains hundreds of potential integration channels. As BidBlender writes its compliance matrices and identifies teaming capabilities within the Data Clean Rooms, these findings can now be programmatically written *back* out to the host networks.
 
 By standardising how the AI communicates intimately and securely with surrounding data domains, BidBlender is ensuring that its Opportunity Intelligence isn't trapped in isolation, but flows seamlessly through the very vascular system of the enterprise.
+
+
+---
+
+## Press Release Series
+
+<div align="center">
+
+[← Previous: Contextual Compression Infrastructure](./05_contextual_compression.md) | [Next: Marketplace Ecosystem →](./07_marketplace_ecosystem.md)
+
+</div>

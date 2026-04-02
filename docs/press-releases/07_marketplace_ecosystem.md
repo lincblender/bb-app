@@ -13,3 +13,14 @@ Through the BidBlender Marketplace, organizations can officially advertise their
 Once connected via the marketplace, parties instantaneously pivot into BidBlender's Data Clean Rooms—allowing them to seamlessly interrogate combined IP, generate immediate joint strategies, and solidify teaming agreements. 
 
 With native Stripe integration allowing for direct commercial settlements, consulting retainers, and bounty distribution within the ecosystem, BidBlender has transformed from an isolated software tool into the financial and operational bedrock of the B2B tendering economy.
+
+
+---
+
+## Press Release Series
+
+<div align="center">
+
+[← Previous: MCP Integration Ecosystem](./06_mcp_integration_ecosystem.md)
+
+</div>

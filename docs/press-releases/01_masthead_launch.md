@@ -28,3 +28,23 @@ Underpinned by a dual-tier AI routing capability that dynamically protects token
 
 **About BidBlender**
 BidBlender is an intelligence logistics platform engineered to streamline and secure B2B tendering, procurement strategies, and consortium teaming. By blending deterministic software with robust generative AI, we allow enterprises to compete harder, faster, and smarter.
+
+
+---
+
+## Press Release Series
+
+Welcome to the foundational release. Read our sequential drops to see the full architecture rollout:
+
+1. [Autonomous Discovery Pipeline](./02_autonomous_discovery.md)
+2. [Data Clean Rooms](./03_data_clean_rooms.md)
+3. [Multiplayer Strategy Workspaces](./04_multiplayer_intelligence.md)
+4. [Contextual Compression Infrastructure](./05_contextual_compression.md)
+5. [MCP Integration Ecosystem](./06_mcp_integration_ecosystem.md)
+6. [Marketplace Ecosystem](./07_marketplace_ecosystem.md)
+
+<div align="center">
+
+[Next: Autonomous Discovery Pipeline →](./02_autonomous_discovery.md)
+
+</div>

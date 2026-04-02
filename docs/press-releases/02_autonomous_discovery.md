@@ -9,3 +9,14 @@ With today’s release, BidBlender has directly integrated with major portals li
 "Catching the tender is only half the battle. Surviving its mutations is the real challenge," said Lincoln, Product Lead at BidBlender. "When a government agency releases an Addendum—perhaps shifting a deadline or altering a liability requirement—our edge-functions immediately parse the document. The AI mathematically compares the delta against the base opportunity constraint, determining if the shift is 'Material'. If a strategic risk is detected, real-time UI bells instantly interrupt the user's workflow to enforce strategic realignment."
 
 Coupled with BidBlender's ability to synthetically ingest a user’s professional LinkedIn network to assess the "pursuability" of these newly discovered bids, the Autonomous Intelligence Pipeline guarantees that enterprise users never miss an actionable opportunity or a critical amendment again.
+
+
+---
+
+## Press Release Series
+
+<div align="center">
+
+[← Previous: Masthead Launch](./01_masthead_launch.md) | [Next: Data Clean Rooms →](./03_data_clean_rooms.md)
+
+</div>
