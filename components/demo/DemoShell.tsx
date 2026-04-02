@@ -14,6 +14,7 @@ import { ChatListSidebar } from "./ChatListSidebar";
 import { UserProfile } from "./UserProfile";
 import { PromptScreen } from "./PromptScreen";
 import { OpportunityPanel, type SectionId } from "./OpportunityPanel";
+import { NotificationsBell } from "./NotificationsBell";
 import { ChatTopBar } from "./ChatTopBar";
 import { blockNavigationForUnsavedChanges } from "@/lib/navigation/unsaved-changes";
 import {
@@ -319,6 +320,9 @@ function DemoShellInner({ children }: { children: React.ReactNode }) {
                 className={`shrink-0 text-gray-500 transition-transform ${settingsOpen ? "rotate-180" : ""}`}
               />
             </button>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+              <NotificationsBell />
+            </div>
             {settingsOpen && (
               <div className="absolute bottom-full left-0 right-0 z-10 mb-1 min-w-64 rounded-lg border border-gray-700 bg-bb-dark-elevated py-1 shadow-lg">
                 {PINNABLE_SCREEN_SURFACES.map((item) => {
